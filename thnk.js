@@ -3,6 +3,9 @@ import { readFileSync, statSync, writeFileSync, existsSync } from 'fs'
 import makefileParser from '@kba/makefile-parser'
 import { generateText, generateObject, jsonSchema } from 'ai'
 
+const SPECIAL_FILE =
+  /(\.schema\.json|\.prompt\.md|\.thnk\.[a-z_]+|(^|\.)thnkfile)$/i
+
 let model
 if (process.env.OPENAI_API_KEY) {
   model = (await import('@ai-sdk/openai')).openai(
@@ -27,9 +30,19 @@ for (const node of makefileParser(src, { strict: true }).ast) {
   if ('target' in node) {
     const { target } = node
     const targetStat = existsSync(target) ? statSync(target) : undefined
-    let deps = node.deps
-    const depStats = deps.map((d) => statSync(d))
-    const prompt = node.recipe.join('\n')
+    const deps = node.deps.filter((d) => !d.match(SPECIAL_FILE))
+    const specials = node.deps.filter((d) => d.match(SPECIAL_FILE))
+    const schemaFiles = specials.filter((d) => d.endsWith('.schema.json'))
+    if (schemaFiles.length > 1) throw new Error('Multiple .schema.json files')
+    const schemaFile = schemaFiles.at(0)
+    const promptFiles = specials.filter((d) => d.endsWith('.prompt.md'))
+    if (promptFiles.length > 1) throw new Error('Multiple .prompt.md files')
+    const promptFile = promptFiles.at(0)
+    const depStats = [...deps, ...specials].map((d) => statSync(d))
+    const inlinePrompt = node.recipe.join('\n').trim()
+    if (inlinePrompt && promptFile)
+      throw new Error('Cannot have prompt both in file and in Thnkfile')
+    const prompt = inlinePrompt || readFileSync(promptFile).toString()
     if (!targetStat || depStats.some((d) => d.mtimeMs > targetStat.mtimeMs)) {
       ++count
       let result
@@ -47,12 +60,7 @@ for (const node of makefileParser(src, { strict: true }).ast) {
         prompt,
       }
       if (target.endsWith('.json')) {
-        const schemaName = target.replace(/\.json$/, '.schema.json')
-        if (!deps.includes(schemaName))
-          throw new Error(
-            `Include a JSON schema ${schemaName} in deps of ${target}`
-          )
-        const schema = JSON.parse(readFileSync(schemaName))
+        const schema = JSON.parse(readFileSync(schemaFile))
         result = JSON.stringify(
           (
             await generateObject({
