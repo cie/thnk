@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "word": { "type": "string" },
+          "emoji": { "type": "string" }
+        }
+      }
+    }
+  }
+}

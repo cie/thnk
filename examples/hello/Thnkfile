@@ -1,0 +1,3 @@
+hello.txt: person_name.txt
+	Write a greeting to the person.
+	The greeting should be "Hello, <name>!".

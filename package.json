@@ -1,0 +1,20 @@
+{
+  "name": "thnk",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "bin": {
+    "thnk": "./thnk.js"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ai-sdk/openai": "^0.0.72",
+    "@kba/makefile-parser": "^0.0.6",
+    "ai": "^3.4.33"
+  }
+}

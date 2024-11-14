@@ -1,0 +1,9 @@
+emoji.json: words.txt emoji.schema.json Thnkfile
+  Generate an emoji or a combination of emojis for each line in the source file.
+  Output it in JSON like
+  {
+    "mappings": [
+      {"word": "cat", "emoji": "😺"},
+      {"word": "the whole world", "emoji": "🗺️"}
+    ]
+  }
