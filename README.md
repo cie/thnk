@@ -4,7 +4,7 @@ Thnk is a command-line tool that automates the process of generating files based
 
 ## Installation
 
-To install Thnk, you need Node.js and npm (Node Package Manager). Once Node.js is installed, you can install Thnk using npm:
+To install Thnk, you need Node.js. Once Node.js is installed, you can install Thnk using npm:
 
 ```bash
 npm install -g thnk
@@ -16,7 +16,7 @@ Ensure that you have set the `OPENAI_API_KEY` environment variable to use the Op
 export OPENAI_API_KEY='your_openai_api_key_here'
 ```
 
-Optionally, you can set the `OPENAI_MODEL` environment variable to specify the model to use. The default is gpt-4o-mini.
+Optionally, you can set the `OPENAI_MODEL` environment variable to specify the model to use. The default is `gpt-4o-mini`.
 
 ```bash
 export OPENAI_MODEL='gpt-4o'
@@ -44,7 +44,7 @@ A `Thnkfile` consists of targets, dependencies, and recipes. Here’s a brief ov
   target: dependency1 dependency2
   ```
 
-- **Recipes**: The recipe is a block of code or commands that describe how to generate the target file from the dependencies. Instead of providing the recipe in-line, you include a `*.prompt.md` or `prompt.md` file among the dependencies.
+- **Recipes**: The recipe is an indented block of text that's used as a prompt to generate the target file from the dependencies. Instead of providing the recipe in the Thnkfile, you include a `*.prompt.md` or `prompt.md` file among the dependencies.
 
   ```
   target: dependency1 dependency2
@@ -55,10 +55,11 @@ A `Thnkfile` consists of targets, dependencies, and recipes. Here’s a brief ov
   target: dependency1 dependency2 my.prompt.md
   ```
 
-- **Schema files**: You can include a `*.schema.json` or `schema.json` file among the dependencies, this will be used as a schema for the output of the AI model.
+- **Schema files**: For `.json` targets, you can specify a `*.schema.json` or `schema.json` file containing a JSON schema, this will be used as a schema for the output JSON file.
 
   ```
-  target: dependency1 dependency2 my.schema.json
+  target.json: dependency1 dependency2 my.schema.json
+    Generate a JSON file so that...
   ```
 
 See the `examples` folder for sample `Thnkfile` configurations.
