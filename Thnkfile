@@ -1,0 +1,10 @@
+README.md : thnk.js Thnkfile
+    Behave like the author of a good quality open-source software.
+    Write the README, based on what you see in the source code.
+    Thnk is like Make for AI text generation. Emphasize the similarity to Makefile
+    - short introduction
+    - installation
+    - usage
+    - Thnkfile syntax
+    Be concise but helpful. Don't emphasize its benefits, don't be marketing-y. Make it as helpful
+    as a good quality OSS README on GitHub.

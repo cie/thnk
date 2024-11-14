@@ -1,7 +1,7 @@
 {
   "name": "thnk",
   "version": "1.0.0",
-  "description": "",
+  "description": "Makefiles for AI text generation",
   "type": "module",
   "bin": {
     "thnk": "./thnk.js"

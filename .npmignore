@@ -1,0 +1,6 @@
+.vscode
+.gitignore
+.npmignore
+.prettierrc
+package-lock.json
+examples

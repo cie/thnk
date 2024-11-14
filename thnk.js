@@ -9,7 +9,7 @@ const SPECIAL_FILE =
 let model
 if (process.env.OPENAI_API_KEY) {
   model = (await import('@ai-sdk/openai')).openai(
-    process.env.OPENAI_MODEL ?? 'gpt-4-turbo'
+    process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
   )
 } else {
   throw new Error('set OPENAI_API_KEY')
@@ -32,11 +32,11 @@ for (const node of makefileParser(src, { strict: true }).ast) {
     const targetStat = existsSync(target) ? statSync(target) : undefined
     const deps = node.deps.filter((d) => !d.match(SPECIAL_FILE))
     const specials = node.deps.filter((d) => d.match(SPECIAL_FILE))
-    const schemaFiles = specials.filter((d) => d.endsWith('.schema.json'))
-    if (schemaFiles.length > 1) throw new Error('Multiple .schema.json files')
+    const schemaFiles = specials.filter((d) => d.match(/(^|\.)schema\.json$/))
+    if (schemaFiles.length > 1) throw new Error('Multiple schema.json files')
     const schemaFile = schemaFiles.at(0)
-    const promptFiles = specials.filter((d) => d.endsWith('.prompt.md'))
-    if (promptFiles.length > 1) throw new Error('Multiple .prompt.md files')
+    const promptFiles = specials.filter((d) => d.match(/(^|\.)prompt\.md$/))
+    if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
     const promptFile = promptFiles.at(0)
     const depStats = [...deps, ...specials].map((d) => statSync(d))
     const inlinePrompt = node.recipe.join('\n').trim()
@@ -80,4 +80,4 @@ for (const node of makefileParser(src, { strict: true }).ast) {
   }
 }
 
-console.log(count ? `Thght ${count} files.` : `All files thght.`)
+console.log(count ? `Thgt ${count} files.` : `All files thgt.`)
