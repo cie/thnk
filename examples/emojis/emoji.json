@@ -1,28 +1,9 @@
 {
-  "mappings": [
-    {
-      "word": "integrity",
-      "emoji": "🛡️"
-    },
-    {
-      "word": "F9 key",
-      "emoji": "🔑"
-    },
-    {
-      "word": "horseback archery",
-      "emoji": "🏇🏹"
-    },
-    {
-      "word": "follow the white bunny",
-      "emoji": "🐇➡️"
-    },
-    {
-      "word": "it's turtles all the way down",
-      "emoji": "🐢🔄"
-    },
-    {
-      "word": "never stop thinking",
-      "emoji": "💭🔄"
-    }
-  ]
+  "integrity": "🛡️",
+  "F9 key": "🔑",
+  "horseback archery": "🏇🏹",
+  "follow the white bunny": "🐇➡️",
+  "it's turtles all the way down": "🐢🔄",
+  "the proof is in the pudding": "🍮✅",
+  "never stop thinking": "💭🔄"
 }

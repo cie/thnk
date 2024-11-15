@@ -1,2 +1,2 @@
-emoji.json: words.txt emoji.prompt.md emoji.schema.json
+emoji.json: words.txt emoji.prompt.md
   

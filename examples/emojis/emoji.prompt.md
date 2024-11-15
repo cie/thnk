@@ -3,9 +3,7 @@ Output it in JSON like:
 
 ```json
 {
-  "mappings": [
-    { "word": "cat", "emoji": "😺" },
-    { "word": "the whole world", "emoji": "🗺️" }
-  ]
+  "cat": "😺",
+  "the whole world": "🗺️"
 }
 ```

@@ -59,7 +59,7 @@ for (const node of makefileParser(src, { strict: true }).ast) {
         temperature,
         prompt,
       }
-      if (target.endsWith('.json')) {
+      if (target.endsWith('.json') && schemaFile) {
         const schema = JSON.parse(readFileSync(schemaFile))
         result = JSON.stringify(
           (

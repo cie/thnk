@@ -1,6 +1,4 @@
-README.md : README.md
+thnk.js: thnk.js
+    Fix: it should allow `.json` target without a schema, but in this case it's a normal tewxt generation
 
-    Add another h3 to the intro, before Version controlling, about 
-    making pipelines from subsequent prompts and generations, and
-    how thnk only regenerates the files that are necessary.
 
