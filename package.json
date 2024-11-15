@@ -2,6 +2,10 @@
   "name": "thnk",
   "version": "1.1.0",
   "description": "Makefiles for AI text generation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cie/thnk"
+  },
   "type": "module",
   "bin": {
     "thnk": "./thnk.js"
