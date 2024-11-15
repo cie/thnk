@@ -2,6 +2,12 @@
 
 Thnk is a command-line tool that automates the process of generating files based on AI models, similar to how Make automates the building of software. It uses a configuration file, akin to a Makefile, to manage dependencies and determine the operations required to generate target files from source files.
 
+### Creating AI generation pipelines
+
+Thnk allows you to create pipelines from subsequent prompts and generations, ensuring that only the necessary files are regenerated. This means that if a dependency changes, Thnk will determine which target files need to be updated, saving time and costs.
+
+(Automatically thnking the entire pipeline is not yet implemented.)
+
 ### Version controlling prompts
 
 Thnk also helps in version controlling of AI prompts with git, allowing you to track changes in your prompt files over time. By committing your prompts and the generated outputs, you can easily see how modifications to the prompts influence the generated text.
