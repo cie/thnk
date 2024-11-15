@@ -8,9 +8,9 @@ Thnk allows you to create pipelines from subsequent prompts and generations, ens
 
 (Automatically thnking the entire pipeline is not yet implemented.)
 
-### Version controlling prompts
+### Version controlling prompts and outputs
 
-Thnk also helps in version controlling of AI prompts with git, allowing you to track changes in your prompt files over time. By committing your prompts and the generated outputs, you can easily see how modifications to the prompts influence the generated text.
+Thnk also helps in version controlling of AI prompts with git, allowing you to track changes in your prompt files over time. By committing your prompts and the generated outputs, you can see how modifications to the prompts influence the generated text, aid collaboration and improve reproducibility.
 
 ## Installation
 
@@ -73,15 +73,3 @@ A `Thnkfile` consists of targets, dependencies, and recipes. Here’s a brief ov
   ```
 
 See the `examples` folder for sample `Thnkfile` configurations.
-
-## Version Control with Git
-
-Using Thnk in conjunction with git is highly beneficial for tracking the evolution of your AI prompts and their outputs. By committing both your prompt files and the generated text, you can leverage git's diff capabilities to observe how changes in the prompts affect the generated content. This practice not only aids in understanding the impact of your modifications but also enhances collaboration and reproducibility in projects that utilize AI-generated content.
-
-## Notes
-
-- Thnk checks if the target files are up-to-date by comparing the modification times of the dependencies.
-- If multiple `schema.json` or `prompt.md` files are specified, it's an error.
-- Thnk supports integration with OpenAI's models, and you can specify the model in the environment variable `OPENAI_MODEL`.
-
-Thnk simplifies the process of integrating AI-generated content into your projects, leveraging the familiar make-like syntax to manage complex dependencies and generation rules.
