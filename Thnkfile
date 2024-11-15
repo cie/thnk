@@ -1,4 +1,4 @@
-thnk.js: thnk.js
-    Fix: it should allow `.json` target without a schema, but in this case it's a normal tewxt generation
+docs/thnkfile-spec.md: thnk.js README.md
+   make a specification of the Thnkfile format 
 
 
