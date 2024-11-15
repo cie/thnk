@@ -2,6 +2,10 @@
 
 Thnk is a command-line tool that automates the process of generating files based on AI models, similar to how Make automates the building of software. It uses a configuration file, akin to a Makefile, to manage dependencies and determine the operations required to generate target files from source files.
 
+### Version controlling prompts
+
+Thnk also helps in version controlling of AI prompts with git, allowing you to track changes in your prompt files over time. By committing your prompts and the generated outputs, you can easily see how modifications to the prompts influence the generated text.
+
 ## Installation
 
 To install Thnk, you need Node.js. Once Node.js is installed, you can install Thnk using npm:
@@ -63,6 +67,10 @@ A `Thnkfile` consists of targets, dependencies, and recipes. Here’s a brief ov
   ```
 
 See the `examples` folder for sample `Thnkfile` configurations.
+
+## Version Control with Git
+
+Using Thnk in conjunction with git is highly beneficial for tracking the evolution of your AI prompts and their outputs. By committing both your prompt files and the generated text, you can leverage git's diff capabilities to observe how changes in the prompts affect the generated content. This practice not only aids in understanding the impact of your modifications but also enhances collaboration and reproducibility in projects that utilize AI-generated content.
 
 ## Notes
 

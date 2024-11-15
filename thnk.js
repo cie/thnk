@@ -43,7 +43,7 @@ for (const node of makefileParser(src, { strict: true }).ast) {
     if (inlinePrompt && promptFile)
       throw new Error('Cannot have prompt both in file and in Thnkfile')
     const prompt = inlinePrompt || readFileSync(promptFile).toString()
-    if (!targetStat || depStats.some((d) => d.mtimeMs > targetStat.mtimeMs)) {
+    if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
       ++count
       let result
       const config = {

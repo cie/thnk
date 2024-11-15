@@ -1,10 +1,8 @@
-README.md : thnk.js Thnkfile
-    Behave like the author of a good quality open-source software.
-    Write the README, based on what you see in the source code.
-    Thnk is like Make for AI text generation. Emphasize the similarity to Makefile
-    - short introduction
-    - installation
-    - usage
-    - Thnkfile syntax
-    Be concise but helpful. Don't emphasize its benefits, don't be marketing-y. Make it as helpful
-    as a good quality OSS README on GitHub.
+README.md : README.md
+
+    Add a paragraph to README near the beginning to explain how Thnk can help in version
+    controlling AI prompts with git. Also mention (maybe in a new section) how it's worth
+    using Thnk together with git to see how changes in the prompts affect the generated
+    text - you commit the generated text in version control, and you can easily see the
+    changes in the generated text by looking at the diffs in git. This can be useful for
+    tracking the effect of changes in the prompts.
