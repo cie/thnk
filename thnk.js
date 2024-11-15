@@ -17,7 +17,7 @@ if (process.env.OPENAI_API_KEY) {
 
 console.log('Thnking...')
 
-const system = `You are a file generator. You get attached input files and instructions, and you generate the content of the output file, without any explanations - only output the pure file contents and nothing else. Follow the instructions you get.`
+const system = `You are a file generator. You get attached input files and instructions, and you generate the content of the output file, without any explanations - only output the pure file contents and nothing else, not even Markdown fences. Follow the instructions you get.`
 const temperature = 0
 
 const src = readFileSync('Thnkfile', 'utf8')
@@ -49,6 +49,7 @@ for (const node of makefileParser(src, { strict: true }).ast) {
         model,
         system:
           system +
+          `\n\nYou need to generate ${target}` +
           '\n\nThe content of the input files are: \n\n' +
           deps
             .map((fn) => {
