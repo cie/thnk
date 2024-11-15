@@ -1,7 +1,14 @@
 #!/usr/bin/env node
-import { readFileSync, statSync, writeFileSync, existsSync } from 'fs'
+import {
+  readFileSync,
+  statSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+} from 'fs'
 import makefileParser from '@kba/makefile-parser'
 import { generateText, generateObject, jsonSchema } from 'ai'
+import { dirname } from 'path'
 
 const SPECIAL_FILE =
   /(\.schema\.json|\.prompt\.md|\.thnk\.[a-z_]+|(^|\.)thnkfile)$/i
@@ -75,6 +82,7 @@ for (const node of makefileParser(src, { strict: true }).ast) {
       } else {
         result = (await generateText(config)).text
       }
+      mkdirSync(dirname(target), { recursive: true })
       writeFileSync(target, result)
     }
   }
