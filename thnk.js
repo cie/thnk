@@ -45,43 +45,35 @@ function readAndParseThnkfile(fileName) {
   }
 }
 
-function* targets(ast) {
+function* rules(ast) {
   for (const node of ast) {
     if ('target' in node) {
-      yield node;
+      yield node
     }
   }
 }
 
-let fileCount = 0
-const ast = readAndParseThnkfile(THNKFILE_NAME)
-
-for (const node of targets(ast)) {
-  const { target } = node
+function* generations(rule) {
+  const { target } = rule
   const targetStat = existsSync(target) ? statSync(target) : undefined
-  const deps = node.deps.filter((d) => !d.match(SPECIAL_FILE))
-  const specials = node.deps.filter((d) => d.match(SPECIAL_FILE))
+  const deps = rule.deps.filter((d) => !d.match(SPECIAL_FILE))
+  const specials = rule.deps.filter((d) => d.match(SPECIAL_FILE))
   const schemaFiles = specials.filter((d) => d.match(/(^|\.)schema\.json$/))
+  const promptFiles = specials.filter((d) => d.match(/(^|\.)prompt\.md$/))
 
   if (schemaFiles.length > 1) throw new Error('Multiple schema.json files')
   const schemaFile = schemaFiles.at(0)
-  const promptFiles = specials.filter((d) => d.match(/(^|\.)prompt\.md$/))
 
   if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
   const promptFile = promptFiles.at(0)
   const depStats = [...deps, ...specials].map((d) => statSync(d))
-  const inlinePrompt = node.recipe.join('\n').trim()
+  const inlinePrompt = rule.recipe.join('\n').trim()
 
   if (inlinePrompt && promptFile) {
     throw new Error('Cannot have prompt both in file and in Thnkfile')
   }
 
   const prompt = inlinePrompt || readFileSync(promptFile).toString()
-
-  console.log(
-    targetStat?.mtimeMs,
-    depStats.map((d) => d.mtimeMs)
-  )
 
   if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
     console.log(`Thnking ${target}...`)
@@ -107,32 +99,50 @@ for (const node of targets(ast)) {
     console.debug(prompt)
 
     if (target.endsWith('.json') && schemaFile) {
+      let schema
       try {
-        const schema = JSON.parse(readFileSync(schemaFile))
-        result = JSON.stringify(
-          (
-            await generateObject({
-              ...config,
-              output: 'object',
-              schema: jsonSchema(schema),
-            })
-          ).object,
-          undefined,
-          2
-        )
+        schema = JSON.parse(readFileSync(schemaFile))
       } catch (error) {
         console.error(`Error processing schema file ${schemaFile}:`, error)
         process.exit(1)
       }
+      yield {
+        type: 'json',
+        config: {
+          ...config,
+          output: 'object',
+          schema: jsonSchema(schema),
+        },
+      }
     } else {
-      try {
+      yield { type: 'text', config }
+    }
+  }
+}
+
+let fileCount = 0
+const ast = readAndParseThnkfile(THNKFILE_NAME)
+
+for (const rule of rules(ast)) {
+  const { target } = rule
+  for (const generation of generations(rule)) {
+    let result
+    switch (generation.type) {
+      case 'text': {
+        const { config } = generation
         result = (await generateText(config)).text
-      } catch (error) {
-        console.error(`Error generating text for ${target}:`, error)
-        process.exit(1)
+        break
+      }
+      case 'json': {
+        const { config } = generation
+        result = JSON.stringify(
+          (await generateObject(config)).object,
+          undefined,
+          2
+        )
+        break
       }
     }
-
     try {
       mkdirSync(dirname(target), { recursive: true })
       writeFileSync(target, result)
