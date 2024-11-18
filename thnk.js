@@ -26,6 +26,8 @@ if (process.env.OPENAI_API_KEY) {
 const system = `You are a file generator. You get attached input files and instructions, and you generate the content of the output file, without any explanations - only output the pure file contents and nothing else, not even Markdown fences. Follow the instructions you get.`
 const temperature = 0
 
+console.debug = () => {}
+
 function readAndParseThnkfile(fileName) {
   let src
   try {
