@@ -1,17 +1,2 @@
-docs/thnkfile-spec.md: thnk.js README.md
-	make a specification of the Thnkfile format 
-
-tests/thnkfile.test.md: docs/thnkfile-spec.md Thnkfile
-	make test cases in Markdown format, so that every test step is a list item
-	Use ordered list items for sequential steps, use bullet points for branches which yield different test cases
-	Use sections for different features. Similar to this format:
-	## Todo list
-	1. Add a task => 1 tasks
-	2. Add another task => 2 tasks
-	   * Remove the first task => 1 task
-	   * **Removal of marked tasks**:
-	      1. Mark a task as done => 2 task
-		  2. Remove all done tasks => 1 task
-
-tests/thnkfile.steps.js: tests/thnkfile.test.md
-	Make a step definition file from the test steps
+TODO.md: thnk.js
+  make list of desirable refactorings and fixes
