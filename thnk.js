@@ -10,8 +10,7 @@ import makefileParser from '@kba/makefile-parser'
 import { generateText, generateObject, jsonSchema } from 'ai'
 import { dirname } from 'path'
 
-const SPECIAL_FILE =
-  /(\.schema\.json|\.prompt\.md|\.thnk\.[a-z_]+|(^|\.)thnkfile)$/i
+const SPECIAL_FILE = /(^|\.)(thnkfile|schema\.json|prompt\.md)$/i
 
 let model
 if (process.env.OPENAI_API_KEY) {
@@ -22,14 +21,12 @@ if (process.env.OPENAI_API_KEY) {
   throw new Error('set OPENAI_API_KEY')
 }
 
-console.log('Thnking...')
-
 const system = `You are a file generator. You get attached input files and instructions, and you generate the content of the output file, without any explanations - only output the pure file contents and nothing else, not even Markdown fences. Follow the instructions you get.`
 const temperature = 0
 
 const src = readFileSync('Thnkfile', 'utf8')
   .replace(/\r\n/g, '\n')
-  .replace(/^\s+/gm, '\t')
+  .replace(/^[ \t]+/gm, '\t')
 
 let count = 0
 for (const node of makefileParser(src, { strict: true }).ast) {
@@ -49,7 +46,12 @@ for (const node of makefileParser(src, { strict: true }).ast) {
     if (inlinePrompt && promptFile)
       throw new Error('Cannot have prompt both in file and in Thnkfile')
     const prompt = inlinePrompt || readFileSync(promptFile).toString()
+    console.log(
+      targetStat?.mtimeMs,
+      depStats.map((d) => d.mtimeMs)
+    )
     if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
+      console.log(`Thnking ${target}...`)
       ++count
       let result
       const config = {
@@ -66,6 +68,9 @@ for (const node of makefileParser(src, { strict: true }).ast) {
         temperature,
         prompt,
       }
+      console.debug(deps)
+      console.debug(config.system)
+      console.debug(prompt)
       if (target.endsWith('.json') && schemaFile) {
         const schema = JSON.parse(readFileSync(schemaFile))
         result = JSON.stringify(
