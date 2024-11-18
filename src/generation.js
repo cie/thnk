@@ -27,13 +27,13 @@ export function* generations(rule) {
 
   if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
   const promptFile = promptFiles.at(0)
-  const depStats = [...deps, ...specials].map((d) => statSync(d))
   const inlinePrompt = rule.recipe.join('\n').trim()
 
   if (inlinePrompt && promptFile) {
     throw new Error('Cannot have prompt both in file and in Thnkfile')
   }
 
+  const depStats = [...deps, ...specials].map((d) => statSync(d))
   const prompt = inlinePrompt || readFileSync(promptFile).toString()
 
   if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {

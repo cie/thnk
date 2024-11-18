@@ -20,5 +20,9 @@
     "@ai-sdk/openai": "^0.0.72",
     "@kba/makefile-parser": "^0.0.6",
     "ai": "^3.4.33"
+  },
+  "devDependencies": {
+    "chai": "^5.1.2",
+    "mocha": "^10.8.2"
   }
 }

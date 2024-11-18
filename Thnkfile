@@ -1,2 +1,2 @@
-src/thnkfile.js: src/thnkfile.js
-  - separate readAndParseThnkfile into readThnkfile and parseThnkfile
+src/generation.test.js: src/generation.js
+  write mocha test cases
