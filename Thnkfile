@@ -1,2 +1,2 @@
-thnk.js: thnk.js
-  - Override console.debug with a no-op function at the beginning.
+src/thnkfile.js: src/thnkfile.js
+  - separate readAndParseThnkfile into readThnkfile and parseThnkfile
