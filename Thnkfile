@@ -1,9 +1,2 @@
 thnk.js: thnk.js
-	- Refactor the import statements to use a consistent style (e.g., group related imports together).
-	- Implement error handling for file reading and writing operations to prevent crashes.
-	- Extract the logic for reading and parsing the Thnkfile into a separate function for better readability.
-	- Use constants for magic strings (e.g., 'gpt-4o-mini', 'Thnkfile') to avoid hardcoding.
-	- Improve the naming of variables for clarity (e.g., rename `count` to `fileCount`).
-	- Add comments to explain complex logic and improve code maintainability.
-	- Validate the contents of the schema and prompt files before processing to ensure they meet expected formats.
-	- Disable console.debug statements for now by overriding this method with a no-op.
+  - refactor the traversal of the targets into a generator function and a for-of loop

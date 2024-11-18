@@ -43,94 +43,100 @@ function readAndParseThnkfile(fileName) {
   }
 }
 
+function* targets(ast) {
+  for (const node of ast) {
+    if ('target' in node) {
+      yield node;
+    }
+  }
+}
+
 let fileCount = 0
 const ast = readAndParseThnkfile(THNKFILE_NAME)
 
-for (const node of ast) {
-  if ('target' in node) {
-    const { target } = node
-    const targetStat = existsSync(target) ? statSync(target) : undefined
-    const deps = node.deps.filter((d) => !d.match(SPECIAL_FILE))
-    const specials = node.deps.filter((d) => d.match(SPECIAL_FILE))
-    const schemaFiles = specials.filter((d) => d.match(/(^|\.)schema\.json$/))
+for (const node of targets(ast)) {
+  const { target } = node
+  const targetStat = existsSync(target) ? statSync(target) : undefined
+  const deps = node.deps.filter((d) => !d.match(SPECIAL_FILE))
+  const specials = node.deps.filter((d) => d.match(SPECIAL_FILE))
+  const schemaFiles = specials.filter((d) => d.match(/(^|\.)schema\.json$/))
 
-    if (schemaFiles.length > 1) throw new Error('Multiple schema.json files')
-    const schemaFile = schemaFiles.at(0)
-    const promptFiles = specials.filter((d) => d.match(/(^|\.)prompt\.md$/))
+  if (schemaFiles.length > 1) throw new Error('Multiple schema.json files')
+  const schemaFile = schemaFiles.at(0)
+  const promptFiles = specials.filter((d) => d.match(/(^|\.)prompt\.md$/))
 
-    if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
-    const promptFile = promptFiles.at(0)
-    const depStats = [...deps, ...specials].map((d) => statSync(d))
-    const inlinePrompt = node.recipe.join('\n').trim()
+  if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
+  const promptFile = promptFiles.at(0)
+  const depStats = [...deps, ...specials].map((d) => statSync(d))
+  const inlinePrompt = node.recipe.join('\n').trim()
 
-    if (inlinePrompt && promptFile) {
-      throw new Error('Cannot have prompt both in file and in Thnkfile')
+  if (inlinePrompt && promptFile) {
+    throw new Error('Cannot have prompt both in file and in Thnkfile')
+  }
+
+  const prompt = inlinePrompt || readFileSync(promptFile).toString()
+
+  console.log(
+    targetStat?.mtimeMs,
+    depStats.map((d) => d.mtimeMs)
+  )
+
+  if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
+    console.log(`Thnking ${target}...`)
+    ++fileCount
+    let result
+    const config = {
+      model,
+      system:
+        system +
+        `\n\nYou need to generate ${target}` +
+        '\n\nThe content of the input files are: \n\n' +
+        deps
+          .map((fn) => {
+            return `${fn}:\n\`\`\`${readFileSync(fn)}\`\`\``
+          })
+          .join('\n\n'),
+      temperature,
+      prompt,
     }
 
-    const prompt = inlinePrompt || readFileSync(promptFile).toString()
+    console.debug(deps)
+    console.debug(config.system)
+    console.debug(prompt)
 
-    console.log(
-      targetStat?.mtimeMs,
-      depStats.map((d) => d.mtimeMs)
-    )
-
-    if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
-      console.log(`Thnking ${target}...`)
-      ++fileCount
-      let result
-      const config = {
-        model,
-        system:
-          system +
-          `\n\nYou need to generate ${target}` +
-          '\n\nThe content of the input files are: \n\n' +
-          deps
-            .map((fn) => {
-              return `${fn}:\n\`\`\`${readFileSync(fn)}\`\`\``
-            })
-            .join('\n\n'),
-        temperature,
-        prompt,
-      }
-
-      console.debug(deps)
-      console.debug(config.system)
-      console.debug(prompt)
-
-      if (target.endsWith('.json') && schemaFile) {
-        try {
-          const schema = JSON.parse(readFileSync(schemaFile))
-          result = JSON.stringify(
-            (
-              await generateObject({
-                ...config,
-                output: 'object',
-                schema: jsonSchema(schema),
-              })
-            ).object,
-            undefined,
-            2
-          )
-        } catch (error) {
-          console.error(`Error processing schema file ${schemaFile}:`, error)
-          process.exit(1)
-        }
-      } else {
-        try {
-          result = (await generateText(config)).text
-        } catch (error) {
-          console.error(`Error generating text for ${target}:`, error)
-          process.exit(1)
-        }
-      }
-
+    if (target.endsWith('.json') && schemaFile) {
       try {
-        mkdirSync(dirname(target), { recursive: true })
-        writeFileSync(target, result)
+        const schema = JSON.parse(readFileSync(schemaFile))
+        result = JSON.stringify(
+          (
+            await generateObject({
+              ...config,
+              output: 'object',
+              schema: jsonSchema(schema),
+            })
+          ).object,
+          undefined,
+          2
+        )
       } catch (error) {
-        console.error(`Error writing to target file ${target}:`, error)
+        console.error(`Error processing schema file ${schemaFile}:`, error)
         process.exit(1)
       }
+    } else {
+      try {
+        result = (await generateText(config)).text
+      } catch (error) {
+        console.error(`Error generating text for ${target}:`, error)
+        process.exit(1)
+      }
+    }
+
+    try {
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, result)
+    } catch (error) {
+      console.error(`Error writing to target file ${target}:`, error)
+      process.exit(1)
     }
   }
 }
