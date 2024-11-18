@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'fs'
+import * as prompts from './prompts.js'
 
 const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
 let model
@@ -11,7 +12,6 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 const SPECIAL_FILE = /(^|\.)(thnkfile|schema\.json|prompt\.md)$/i
-const system = `You are a file generator. You get attached input files and instructions, and you generate the content of the output file, without any explanations - only output the pure file contents and nothing else, not even Markdown fences. Follow the instructions you get.`
 const temperature = 0
 
 export function* generations(rule) {
@@ -41,14 +41,19 @@ export function* generations(rule) {
     const config = {
       model,
       system:
-        system +
-        `\n\nYou need to generate ${target}` +
-        '\n\nThe content of the input files are: \n\n' +
-        deps
-          .map((fn) => {
-            return `${fn}:\n\`\`\`${readFileSync(fn)}\`\`\``
-          })
-          .join('\n\n'),
+        prompts.system +
+        `\n\n` +
+        prompts.targetFile(target) +
+        (deps.length > 0
+          ? '\n\n' +
+            prompts.depFiles +
+            '\n\n' +
+            deps
+              .map((fn) => {
+                return prompts.depFileContent(fn, readFileSync(fn))
+              })
+              .join('\n\n')
+          : ''),
       temperature,
       prompt,
     }
