@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'fs'
+import { jsonSchema } from 'ai'
 import * as prompts from './prompts.js'
 
 const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
@@ -14,7 +15,7 @@ if (process.env.OPENAI_API_KEY) {
 const SPECIAL_FILE = /(^|\.)(thnkfile|schema\.json|prompt\.md)$/i
 const temperature = 0
 
-export function* generations(rule) {
+export function* generations(rule, options) {
   const { target } = rule
   const targetStat = existsSync(target) ? statSync(target) : undefined
   const deps = rule.deps.filter((d) => !d.match(SPECIAL_FILE))
@@ -36,50 +37,46 @@ export function* generations(rule) {
   const depStats = [...deps, ...specials].map((d) => statSync(d))
   const prompt = inlinePrompt || readFileSync(promptFile).toString()
 
-  if (!targetStat || depStats.some((d) => d.mtimeMs >= targetStat.mtimeMs)) {
-    console.log(`Thnking ${target}...`)
-    const config = {
-      model,
-      system:
-        prompts.system +
-        `\n\n` +
-        prompts.targetFile(target) +
-        (deps.length > 0
-          ? '\n\n' +
-            prompts.depFiles +
-            '\n\n' +
-            deps
-              .map((fn) => {
-                return prompts.depFileContent(fn, readFileSync(fn))
-              })
-              .join('\n\n')
-          : ''),
-      temperature,
-      prompt,
+  if (!options['always-thnk']) {
+    if (targetStat && depStats.every((d) => d.mtimeMs < targetStat.mtimeMs)) {
+      return
     }
+  }
 
-    console.debug(deps)
-    console.debug(config.system)
-    console.debug(prompt)
+  console.log(`Thnking ${target}...`)
 
-    if (target.endsWith('.json') && schemaFile) {
-      let schema
-      try {
-        schema = JSON.parse(readFileSync(schemaFile))
-      } catch (error) {
-        console.error(`Error processing schema file ${schemaFile}:`, error)
-        process.exit(1)
-      }
-      yield {
-        type: 'json',
-        config: {
-          ...config,
-          output: 'object',
-          schema: jsonSchema(schema),
-        },
-      }
-    } else {
-      yield { type: 'text', config }
+  const depContents = Object.fromEntries(
+    deps.map((fn) => [fn, readFileSync(fn)])
+  )
+
+  const config = {
+    model,
+    system: prompts.system(target, depContents),
+    temperature,
+    prompt,
+  }
+
+  console.debug(deps)
+  console.debug(config.system)
+  console.debug(prompt)
+
+  if (target.endsWith('.json') && schemaFile) {
+    let schema
+    try {
+      schema = JSON.parse(readFileSync(schemaFile))
+    } catch (error) {
+      console.error(`Error processing schema file ${schemaFile}:`, error)
+      process.exit(1)
     }
+    yield {
+      type: 'json',
+      config: {
+        ...config,
+        output: 'object',
+        schema: jsonSchema(schema),
+      },
+    }
+  } else {
+    yield { type: 'text', config }
   }
 }
