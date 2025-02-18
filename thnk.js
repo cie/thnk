@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { writeFileSync, mkdirSync } from 'fs'
+import { writeFileSync, mkdirSync, readFileSync } from 'fs'
 import { generateText, generateObject } from 'ai'
 import { dirname } from 'path'
-import { readThnkfile, parseThnkfile, rules } from './src/thnkfile.js'
-import { generations } from './src/generation.js'
+import { Thnkfile } from './src/thnkfile.js'
 import { parseArgs } from 'util'
+import * as prompts from './src/prompts.js'
 
 const { positionals: targets, values: options } = parseArgs({
   options: {
@@ -17,46 +17,73 @@ const { positionals: targets, values: options } = parseArgs({
   allowPositionals: true,
 })
 
+const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
+let model
+if (process.env.OPENAI_API_KEY) {
+  model = (await import('@ai-sdk/openai')).openai(
+    process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
+  )
+} else {
+  throw new Error('please set OPENAI_API_KEY')
+}
+
+const temperature = 0
+
 const THNKFILE_NAME = 'Thnkfile'
 
-console.debug = () => {}
+console.debug = () => { }
+
+let src
+try {
+  src = readFileSync(THNKFILE_NAME, 'utf8')
+} catch (error) {
+  console.error(`Error reading ${THNKFILE_NAME}:`, error)
+  process.exit(1)
+}
+
+const thnkfile = new Thnkfile(src)
+
+const target = targets[0] ?? undefined
+
+const force = options['always-thnk']
+const plan = thnkfile.plan(target, force)
+if (!plan.length) {
+  console.log('All files thgt.')
+  process.exit(0)
+}
+
+console.log(`Planning to thnk:\n${plan.map(r => r.target).join('\n')}`)
 
 let fileCount = 0
-const src = readThnkfile(THNKFILE_NAME)
-const ast = parseThnkfile(src)
-
-for (const rule of rules(ast)) {
+for (const rule of plan) {
   const { target } = rule
-  if (targets.length && !targets.includes(target)) {
-    continue
+  const generation = rule.generation({ model, prompts, temperature })
+  ++fileCount
+  let result
+  console.log(`Thnking ${target}...`)
+  switch (generation.type) {
+    case 'text': {
+      const { config } = generation
+      result = (await generateText({ ...config })).text
+      break
+    }
+    case 'json': {
+      const { config } = generation
+      result = JSON.stringify(
+        (await generateObject({ ...config })).object,
+        undefined,
+        2
+      )
+      break
+    }
   }
-  for (const generation of generations(rule, options)) {
-    ++fileCount
-    let result
-    switch (generation.type) {
-      case 'text': {
-        const { config } = generation
-        result = (await generateText(config)).text
-        break
-      }
-      case 'json': {
-        const { config } = generation
-        result = JSON.stringify(
-          (await generateObject(config)).object,
-          undefined,
-          2
-        )
-        break
-      }
-    }
-    try {
-      mkdirSync(dirname(target), { recursive: true })
-      writeFileSync(target, result)
-    } catch (error) {
-      console.error(`Error writing to target file ${target}:`, error)
-      process.exit(1)
-    }
+  try {
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, result)
+  } catch (error) {
+    console.error(`Error writing to target file ${target}:`, error)
+    process.exit(1)
   }
 }
 
-console.log(fileCount ? `Thgt ${fileCount} files.` : `All files thgt.`)
+console.log(`Thgt ${fileCount} files.`)

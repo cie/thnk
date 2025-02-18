@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { generations } from './generation.js'
+import { Rule } from './thnkfile'
+
+function generations({ target, deps, recipe }) {
+  const rule = new Rule(target, deps, recipe.join('\n'))
+  return [rule.generation()]
+}
 
 describe('generations', () => {
   it('should throw an error if multiple schema.json files are provided', () => {
