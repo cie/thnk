@@ -62,4 +62,5 @@ describe('generations', () => {
     expect(result).to.have.lengthOf(1)
     expect(result[0]).to.have.property('type', 'json')
   })
+
 })

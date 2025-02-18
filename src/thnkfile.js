@@ -30,24 +30,21 @@ export class Thnkfile {
   }
 
   plan(target = this.defaultTarget, force = false) {
-    const steps = []
-    const visited = new Set()
     const thnk = (target, force = false) => {
-      if (visited.has(target)) return
-      visited.add(target)
       const rule = this.ruleFor(target)
       if (!rule) {
-        if (existsSync(target)) return
+        if (existsSync(target)) return []
         throw new Error(`No rule for target ${target}`)
       }
-      if (!force && rule.cacheHit()) return
+      let upstreamSteps = []
       for (const dep of rule.deps) {
-        thnk(dep)
+        const newSteps = thnk(dep)
+        upstreamSteps = [...upstreamSteps, ...newSteps.filter(s => !upstreamSteps.includes(s))]
       }
-      steps.push(rule)
+      if (!force && upstreamSteps.length === 0 && rule.cacheHit()) return []
+      return [...upstreamSteps, ...rule.isNoOp ? [] : [rule]]
     }
-    thnk(target, force)
-    return steps
+    return thnk(target, force)
   }
 
   ruleFor(target) {
@@ -84,12 +81,10 @@ export class Rule {
     if (this.inlinePrompt && this.promptFile) {
       throw new Error('Cannot have prompt both in file and in Thnkfile')
     }
-    if (!this.inlinePrompt && !this.promptFile) {
-      throw new Error('No prompt provided')
-    }
     if (!this.isJSON && this.schemaFile) {
       throw new Error('Schema file provided for non-JSON target')
     }
+    this.isNoOp = !this.inlinePrompt && !this.promptFile
   }
 
   canMake(target) {
@@ -110,7 +105,7 @@ export class Rule {
     const normalDepContents = Object.fromEntries(
       this.normalDeps.map((fn) => [fn, readFileSync(fn)])
     )
-    const prompt = inlinePrompt || readFileSync(promptFile).toString()
+    const prompt = inlinePrompt || readFileSync(promptFile, 'utf-8')
     const config = {
       model,
       system: prompts.system(target, normalDepContents),

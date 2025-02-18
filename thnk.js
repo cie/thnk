@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
 import { generateText, generateObject } from 'ai'
 import { dirname } from 'path'
 import { Thnkfile } from './src/thnkfile.js'
@@ -43,32 +43,45 @@ try {
 
 const thnkfile = new Thnkfile(src)
 
-const target = targets[0] ?? undefined
+const target = targets[0] ?? thnkfile.defaultTarget
 
 const force = options['always-thnk']
 const plan = thnkfile.plan(target, force)
 if (!plan.length) {
-  console.log('All files thgt.')
+  console.log(`Already thgt ${target}`)
   process.exit(0)
 }
 
-console.log(`Planning to thnk:\n${plan.map(r => r.target).join('\n')}`)
+console.log(`Need to thnk ${plan.map(r => r.target).join(' ')}`)
 
 let fileCount = 0
 for (const rule of plan) {
   const { target } = rule
   const generation = rule.generation({ model, prompts, temperature })
   ++fileCount
+  let { config } = generation
+  if (existsSync(target)) {
+    const existingContent = readFileSync(target, 'utf8')
+    config = {
+      ...config,
+      providerOptions: {
+        openai: {
+          prediction: {
+            type: 'content',
+            content: existingContent
+          }
+        }
+      }
+    }
+  }
   let result
   console.log(`Thnking ${target}...`)
   switch (generation.type) {
     case 'text': {
-      const { config } = generation
       result = (await generateText({ ...config })).text
       break
     }
     case 'json': {
-      const { config } = generation
       result = JSON.stringify(
         (await generateObject({ ...config })).object,
         undefined,
@@ -86,4 +99,4 @@ for (const rule of plan) {
   }
 }
 
-console.log(`Thgt ${fileCount} files.`)
+console.log(`Thgt ${fileCount} file${fileCount === 1 ? '' : 's'}.`)

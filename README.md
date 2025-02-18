@@ -6,7 +6,7 @@ Thnk is a command-line tool that automates the process of generating files based
 
 Thnk allows you to create pipelines from subsequent prompts and generations, ensuring that only the necessary files are regenerated. This means that if a dependency changes, Thnk will determine which target files need to be updated, saving time and costs.
 
-(Automatically thnking the entire pipeline is not yet implemented.)
+Supports OpenAI models' prediction feature, which speeds up re-generation of files with minor changes.
 
 ### Version controlling prompts and outputs
 
