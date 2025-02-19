@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
-import { generateText, generateObject } from 'ai'
+import { streamObject, streamText, generateText, generateObject } from 'ai'
 import { dirname } from 'path'
 import { Thnkfile } from './src/thnkfile.js'
 import { parseArgs } from 'util'
 import * as prompts from './src/prompts.js'
+import { displayProgress } from './src/displayProgress.js'
 
 const { positionals: targets, values: options } = parseArgs({
   options: {
@@ -31,7 +32,7 @@ const temperature = 0
 
 const THNKFILE_NAME = 'Thnkfile'
 
-console.debug = () => { }
+//console.debug = () => { }
 
 let src
 try {
@@ -42,11 +43,10 @@ try {
 }
 
 const thnkfile = new Thnkfile(src)
-
 const target = targets[0] ?? thnkfile.defaultTarget
-
 const force = options['always-thnk']
 const plan = thnkfile.plan(target, force)
+
 if (!plan.length) {
   console.log(`Already thgt ${target}`)
   process.exit(0)
@@ -75,21 +75,27 @@ for (const rule of plan) {
     }
   }
   let result
-  console.log(`Thnking ${target}...`)
+  let lineHead = `Thnking ${target}... `
+  process.stderr.write(lineHead)
   switch (generation.type) {
     case 'text': {
-      result = (await generateText({ ...config })).text
+      const { text, fullStream } = streamText({ ...config })
+      await displayProgress(fullStream, lineHead)
+      result = await text
       break
     }
     case 'json': {
-      result = JSON.stringify(
-        (await generateObject({ ...config })).object,
-        undefined,
-        2
-      )
+      if (config.providerOptions?.openai?.prediction) {
+        // prediction is not supported with tools
+        delete config.providerOptions.openai.prediction
+      }
+      const { object, fullStream } = streamObject({ ...config })
+      await displayProgress(fullStream, lineHead)
+      result = JSON.stringify(await object, undefined, 2)
       break
     }
   }
+  process.stderr.write('\n')
   try {
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, result)
@@ -100,3 +106,5 @@ for (const rule of plan) {
 }
 
 console.log(`Thgt ${fileCount} file${fileCount === 1 ? '' : 's'}.`)
+
+

@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "products": {
+      "type": "array",
+      "description": "A list of products.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the product."
+          },
+          "weight": {
+            "type": "number",
+            "description": "The weight of the product in grams."
+          },
+          "price": {
+            "type": "number",
+            "description": "The price of the product in HUF."
+          }
+        },
+        "required": ["name", "weight", "price"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["products"],
+  "additionalProperties": false
+}

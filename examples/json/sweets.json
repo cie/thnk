@@ -1,0 +1,29 @@
+{
+  "products": [
+    {
+      "name": "Dobos Torte",
+      "weight": 500,
+      "price": 2500
+    },
+    {
+      "name": "Kürtőskalács",
+      "weight": 300,
+      "price": 1500
+    },
+    {
+      "name": "Rétes",
+      "weight": 400,
+      "price": 1200
+    },
+    {
+      "name": "Puncs Torta",
+      "weight": 450,
+      "price": 2200
+    },
+    {
+      "name": "Túrós Csusza",
+      "weight": 350,
+      "price": 1800
+    }
+  ]
+}

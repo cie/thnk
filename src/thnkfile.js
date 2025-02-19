@@ -1,5 +1,6 @@
 import makefileParser from '@kba/makefile-parser'
-import { exists, existsSync, readFileSync, statSync } from 'fs'
+import { existsSync, readFileSync, statSync } from 'fs'
+import { jsonSchema } from 'ai'
 
 export class Thnkfile {
   /** @type {Rule[]} */
