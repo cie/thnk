@@ -34,7 +34,7 @@ export OPENAI_MODEL='gpt-4o'
 
 ## Usage
 
-To use Thnk, you need to create a `Thnkfile` in your project directory. This file defines the targets, dependencies, and the AI model configurations needed to generate your files.
+To use Thnk, you need to create a `Thnkfile.yml` in your project directory. This file defines the targets, dependencies, and the AI model configurations needed to generate your files.
 
 Run Thnk in your terminal:
 
@@ -42,34 +42,51 @@ Run Thnk in your terminal:
 thnk
 ```
 
-Thnk will read the `Thnkfile`, check for changes in dependencies, and regenerate the target files if necessary.
+Thnk will read the `Thnkfile.yml`, check for changes in dependencies, and regenerate the target files if necessary.
 
-## Thnkfile Syntax
+## Thnkfile.yml Syntax
 
-A `Thnkfile` consists of targets, dependencies, and recipes. Here’s a brief overview of its syntax:
+A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. Here's a brief overview of its syntax:
 
-- **Targets and Dependencies**: Each entry in the Thnkfile specifies a target file and its dependencies.
+- **Targets and Dependencies**: Each target is defined under the `targets` key with its dependencies listed under `deps`:
 
-  ```
-  target: dependency1 dependency2
-  ```
-
-- **Recipes**: The recipe is an indented block of text that's used as a prompt to generate the target file from the dependencies. Instead of providing the recipe in the Thnkfile, you include a `*.prompt.md` or `prompt.md` file among the dependencies.
-
-  ```
-  target: dependency1 dependency2
-      Recipe to generate target from dependencies
+  ```yaml
+  targets:
+    output.txt:
+      deps:
+        - dependency1.txt
+        - dependency2.txt
   ```
 
-  ```
-  target: dependency1 dependency2 my.prompt.md
+- **Prompts**: The prompt can be specified directly in the Thnkfile.yml using the `prompt` key, or you can reference an external prompt file using `prompt_file`:
+
+  ```yaml
+  targets:
+    hello.txt:
+      deps:
+        - user.json
+      prompt: |
+        Greet the user
   ```
 
-- **Schema files**: For `.json` targets, you can specify a `*.schema.json` or `schema.json` file containing a JSON schema, this will be used as a schema for the output JSON file.
-
+  ```yaml
+  targets:
+    hello.txt:
+      deps:
+        - user.json
+      prompt_file: greeting.prompt.md
   ```
-  target.json: dependency1 dependency2 my.schema.json
-    Generate a JSON file so that...
+
+- **Schema files**: For `.json` targets, you can specify a schema file using the `schema_file` key:
+
+  ```yaml
+  targets:
+    output.json:
+      deps:
+        - data.txt
+      prompt: |
+        Generate a JSON file from data.txt
+      schema_file: my.schema.json
   ```
 
-See the `examples` folder for sample `Thnkfile` configurations.
+See the `examples` folder for sample `Thnkfile.yml` configurations.
