@@ -28,9 +28,7 @@ if (process.env.OPENAI_API_KEY) {
   throw new Error('please set OPENAI_API_KEY')
 }
 
-const temperature = 0
-
-const THNKFILE_NAME = 'Thnkfile'
+const THNKFILE_NAME = 'Thnkfile.yml'
 
 //console.debug = () => { }
 
@@ -52,12 +50,12 @@ if (!plan.length) {
   process.exit(0)
 }
 
-console.log(`Need to thnk ${plan.map(r => r.target).join(' ')}`)
+console.log(`Need to thnk ${plan.map((r) => r.target).join(' ')}`)
 
 let fileCount = 0
 for (const rule of plan) {
   const { target } = rule
-  const generation = rule.generation({ model, prompts, temperature })
+  const generation = rule.generation(prompts)
   ++fileCount
   let { config } = generation
   if (existsSync(target)) {
@@ -68,10 +66,10 @@ for (const rule of plan) {
         openai: {
           prediction: {
             type: 'content',
-            content: existingContent
-          }
-        }
-      }
+            content: existingContent,
+          },
+        },
+      },
     }
   }
   let result
@@ -106,5 +104,3 @@ for (const rule of plan) {
 }
 
 console.log(`Thgt ${fileCount} file${fileCount === 1 ? '' : 's'}.`)
-
-

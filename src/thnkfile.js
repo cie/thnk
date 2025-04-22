@@ -1,27 +1,80 @@
-import makefileParser from '@kba/makefile-parser'
 import { existsSync, readFileSync, statSync } from 'fs'
 import { jsonSchema } from 'ai'
+import yaml, { JSON_SCHEMA, Type } from 'js-yaml'
+import { z } from 'zod'
+import { openai } from '@ai-sdk/openai'
+
+const SettingsSchema = z.object({
+  prompt: z.string().optional(),
+  schema: z.object({}).passthrough().optional(),
+  model: z.string().optional().default('gpt-4o-mini'),
+  temperature: z.number().min(0).max(2).optional().default(0.0),
+})
+
+const TargetSchema = z
+  .object({
+    needs: z.array(z.string()).optional().default([]),
+  })
+  .merge(SettingsSchema)
+
+const ThnkfileSchema = z
+  .object({
+    targets: z.record(z.string(), TargetSchema),
+  })
+  .merge(SettingsSchema)
+
+const YAML_SCHEMA = JSON_SCHEMA.extend({
+  explicit: [
+    new Type('!file', {
+      kind: 'scalar',
+      construct(fn) {
+        const content = readFileSync(fn, 'utf-8')
+        if (fn.match(/\.json$/i)) {
+          return JSON.parse(content)
+        }
+        if (fn.match(/\.ya?ml$/i)) {
+          return yaml.load(content, { schema: JSON_SCHEMA })
+        }
+        return content
+      },
+    }),
+  ],
+})
 
 export class Thnkfile {
   /** @type {Rule[]} */
   rules = []
 
   /**
-   * @param {string} src 
+   * @param {string} src
    */
   constructor(src) {
-    src = src.replace(/\r\n/g, '\n').replace(/^[ \t]+/gm, '\t')
-    const ast = makefileParser(src, { strict: true }).ast
-    for (const node of ast) {
-      if ('target' in node) {
-        const { target, deps, recipe } = node
+    try {
+      const raw = yaml.load(src, { schema: YAML_SCHEMA })
+      const config = ThnkfileSchema.parse(raw)
+      const globalSettings = SettingsSchema.parse(config)
+
+      for (const [targetName, targetConfig] of Object.entries(config.targets)) {
         try {
-          this.rules.push(new Rule(target, deps, recipe.join('\n').trim()))
+          this.rules.push(
+            new Rule(targetName, { ...globalSettings, ...targetConfig })
+          )
         } catch (e) {
-          e.message = `Error in rule ${target}: ${e.message}`
+          e.message = `Error in target ${targetName}: ${e.message}`
           throw e
         }
       }
+    } catch (e) {
+      if (e.name === 'YAMLException') {
+        throw new Error(`YAML parsing error: ${e.message}`)
+      } else if (e.name === 'ZodError') {
+        throw new Error(
+          `Validation error: ${e.errors
+            .map((err) => `${err.path.join('.')}: ${err.message}`)
+            .join(', ')}`
+        )
+      }
+      throw e
     }
   }
 
@@ -38,12 +91,15 @@ export class Thnkfile {
         throw new Error(`No rule for target ${target}`)
       }
       let upstreamSteps = []
-      for (const dep of rule.deps) {
-        const newSteps = thnk(dep)
-        upstreamSteps = [...upstreamSteps, ...newSteps.filter(s => !upstreamSteps.includes(s))]
+      for (const need of rule.needs) {
+        const newSteps = thnk(need)
+        upstreamSteps = [
+          ...upstreamSteps,
+          ...newSteps.filter((s) => !upstreamSteps.includes(s)),
+        ]
       }
-      if (!force && upstreamSteps.length === 0 && rule.cacheHit()) return []
-      return [...upstreamSteps, ...rule.isNoOp ? [] : [rule]]
+      if (!force && upstreamSteps.length === 0 && rule.isCacheHit()) return []
+      return [...upstreamSteps, ...(rule.isNoOp ? [] : [rule])]
     }
     return thnk(target, force)
   }
@@ -53,75 +109,53 @@ export class Thnkfile {
   }
 }
 
-const SPECIAL_FILE = /(^|\.)(thnkfile|schema\.json|prompt\.md)$/i
-const SCHEMA_FILE = /(^|\.)(schema\.json)$/i
-const PROMPT_FILE = /(^|\.)(prompt\.md)$/i
-const THNKFILE = /(^|\.)(thnkfile)$/i
-
+/**
+ * @implements {z.infer<typeof SettingsSchema>}
+ */
 export class Rule {
+  opts
   /**
-   * @param {string} target 
-   * @param {string[]} deps 
-   * @param {string} inlinePrompt 
+   * @param {string} target
+   * @param {z.infer<typeof TargetSchema>} opts
    */
-  constructor(target, deps, inlinePrompt) {
+  constructor(target, opts) {
     this.target = target
-    this.deps = deps
-    this.inlinePrompt = inlinePrompt.trim()
-    this.normalDeps = deps.filter((d) => !d.match(SPECIAL_FILE))
-    this.specialDeps = deps.filter((d) => d.match(SPECIAL_FILE))
-    const schemaFiles = this.specialDeps.filter((d) => d.match(SCHEMA_FILE))
-    const promptFiles = this.specialDeps.filter((d) => d.match(PROMPT_FILE))
-    this.isJSON = target.endsWith('.json')
+    Object.assign(this, opts)
+    // Will be updated when promptFile is set
+    this.isNoOp = !this.prompt
+  }
 
-    if (schemaFiles.length > 1) throw new Error('Multiple schema.json files')
-    this.schemaFile = schemaFiles.at(0)
-    if (promptFiles.length > 1) throw new Error('Multiple prompt.md files')
-    this.promptFile = promptFiles.at(0)
-
-    if (this.inlinePrompt && this.promptFile) {
-      throw new Error('Cannot have prompt both in file and in Thnkfile')
-    }
-    if (!this.isJSON && this.schemaFile) {
-      throw new Error('Schema file provided for non-JSON target')
-    }
-    this.isNoOp = !this.inlinePrompt && !this.promptFile
+  get isJSON() {
+    return this.target.endsWith('.json') && !!this.schema
   }
 
   canMake(target) {
     return this.target === target
   }
 
-  cacheHit() {
+  isCacheHit() {
     if (!existsSync(this.target)) return false
     const targetStat = statSync(this.target)
-    return this.deps.every((dep) => {
-      const depStat = existsSync(dep) ? statSync(dep) : undefined
-      return depStat && depStat.mtimeMs <= targetStat.mtimeMs
+    return this.needs.every((need) => {
+      const needstat = existsSync(need) ? statSync(need) : undefined
+      return needstat && needstat.mtimeMs <= targetStat.mtimeMs
     })
   }
 
-  generation({ model, prompts, temperature }) {
-    const { target, schemaFile, inlinePrompt, promptFile } = this
+  generation(prompts) {
+    // Use target-specific model and temperature if defined, otherwise use provided values
+    const { model, temperature, prompt, target, schema } = this
     const normalDepContents = Object.fromEntries(
-      this.normalDeps.map((fn) => [fn, readFileSync(fn)])
+      this.needs.map((fn) => [fn, readFileSync(fn)])
     )
-    const prompt = inlinePrompt || readFileSync(promptFile, 'utf-8')
     const config = {
-      model,
+      model: openai(model),
       system: prompts.system(target, normalDepContents),
       temperature,
       prompt,
     }
 
-    if (target.endsWith('.json') && schemaFile) {
-      let schema
-      try {
-        schema = JSON.parse(readFileSync(schemaFile))
-      } catch (error) {
-        console.error(`Error processing schema file ${schemaFile}:`, error)
-        process.exit(1)
-      }
+    if (this.isJSON) {
       return {
         type: 'json',
         config: {
@@ -133,6 +167,5 @@ export class Rule {
     } else {
       return { type: 'text', config }
     }
-
   }
 }

@@ -1,0 +1,18 @@
+targets:
+  all:
+    needs:
+      - hello.txt
+      - hello.html
+
+  hello.txt:
+    needs:
+      - person_name.txt
+    prompt: |
+      Write a greeting to the person.
+      The greeting should be "Hello, <name>!".
+
+  hello.html:
+    needs:
+      - hello.txt
+    prompt: |
+      Make a web page with the greeting.

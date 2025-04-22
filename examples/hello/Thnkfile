@@ -1,8 +1,0 @@
-all: hello.txt hello.html
-
-hello.txt: person_name.txt
-	Write a greeting to the person.
-	The greeting should be "Hello, <name>!".
-
-hello.html: hello.txt
-  Make a web page with the greeting.

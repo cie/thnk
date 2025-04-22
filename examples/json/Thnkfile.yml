@@ -1,0 +1,5 @@
+targets:
+  sweets.json:
+    schema: !file products.schema.json
+    prompt: |
+      Generate 5 sample Hungarian sweets

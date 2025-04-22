@@ -26,12 +26,6 @@ Ensure that you have set the `OPENAI_API_KEY` environment variable to use the Op
 export OPENAI_API_KEY='your_openai_api_key_here'
 ```
 
-Optionally, you can set the `OPENAI_MODEL` environment variable to specify the model to use. The default is `gpt-4o-mini`.
-
-```bash
-export OPENAI_MODEL='gpt-4o'
-```
-
 ## Usage
 
 To use Thnk, you need to create a `Thnkfile.yml` in your project directory. This file defines the targets, dependencies, and the AI model configurations needed to generate your files.
@@ -48,22 +42,23 @@ Thnk will read the `Thnkfile.yml`, check for changes in dependencies, and regene
 
 A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. Here's a brief overview of its syntax:
 
-- **Targets and Dependencies**: Each target is defined under the `targets` key with its dependencies listed under `deps`:
+- **Targets and Dependencies**: Each target is defined under the `targets` key with its dependencies listed under `needs`. You can override global settings per target:
 
   ```yaml
   targets:
     output.txt:
-      deps:
+      needs:
         - dependency1.txt
         - dependency2.txt
+      model: gpt-4o-mini # Override model for this specific target
   ```
 
-- **Prompts**: The prompt can be specified directly in the Thnkfile.yml using the `prompt` key, or you can reference an external prompt file using `prompt_file`:
+- **Prompts**: The prompt can be specified directly in the Thnkfile.yml using the `prompt` key, or you can reference an external prompt file using the YAML tag syntax `!file`:
 
   ```yaml
   targets:
     hello.txt:
-      deps:
+      needs:
         - user.json
       prompt: |
         Greet the user
@@ -72,21 +67,47 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
   ```yaml
   targets:
     hello.txt:
-      deps:
+      needs:
         - user.json
-      prompt_file: greeting.prompt.md
+      prompt: !file greeting.prompt.md
   ```
 
-- **Schema files**: For `.json` targets, you can specify a schema file using the `schema_file` key:
+- **Generation settings**: You can specify global settings that apply to all targets at the top level, or override them per target:
+
+  ```yaml
+  model: gpt-4o
+  temperature: 0.7
+
+  targets:
+    output.txt:
+      model: claude-3.7-sonnet
+      temperature: 0.2
+
+      needs:
+        - dependency1.txt
+  ```
+
+- **Schema files**: For `.json` targets, you can specify a schema file using the YAML tag syntax `!file`:
 
   ```yaml
   targets:
     output.json:
-      deps:
+      needs:
         - data.txt
       prompt: |
         Generate a JSON file from data.txt
-      schema_file: my.schema.json
+      schema: !file my.schema.json
   ```
 
 See the `examples` folder for sample `Thnkfile.yml` configurations.
+
+## Generation settings
+
+Here are the configuration options that can be used globally or per target:
+
+| Option        | Description                   | Default       |
+| ------------- | ----------------------------- | ------------- |
+| `prompt`      | The prompt to use             | empty string  |
+| `schema`      | The JSON schema to use        | no schema     |
+| `model`       | The LLM model to use          | `gpt-4o-mini` |
+| `temperature` | Controls randomness (0.0-2.0) | `0.0`         |

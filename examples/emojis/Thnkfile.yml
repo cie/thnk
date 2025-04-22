@@ -1,0 +1,5 @@
+targets:
+  emoji.json:
+    needs:
+      - words.txt
+    prompt: !file emoji.prompt.md
