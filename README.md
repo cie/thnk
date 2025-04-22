@@ -2,6 +2,8 @@
 
 Thnk is a command-line tool that automates the process of generating files based on AI models, similar to how Make automates the building of software. It uses a configuration file, akin to a Makefile, to manage dependencies and determine the operations required to generate target files from source files.
 
+**Breaking change in v2**: Thnk no longer uses a Makefile-like syntax, but instead YAML, which makes the file format much more flexible.
+
 ### Creating AI generation pipelines
 
 Thnk allows you to create pipelines from subsequent prompts and generations, ensuring that only the necessary files are regenerated. This means that if a dependency changes, Thnk will determine which target files need to be updated, saving time and costs.
@@ -42,7 +44,7 @@ Thnk will read the `Thnkfile.yml`, check for changes in dependencies, and regene
 
 A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. Here's a brief overview of its syntax:
 
-- **Targets and Dependencies**: Each target is defined under the `targets` key with its dependencies listed under `needs`. You can override global settings per target:
+- **Targets and Dependencies**: Each target is defined under the `targets` key with its dependencies listed under `needs`.
 
   ```yaml
   targets:
@@ -50,7 +52,6 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
       needs:
         - dependency1.txt
         - dependency2.txt
-      model: gpt-4o-mini # Override model for this specific target
   ```
 
 - **Prompts**: The prompt can be specified directly in the Thnkfile.yml using the `prompt` key, or you can reference an external prompt file using the YAML tag syntax `!file`:
