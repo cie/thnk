@@ -1,6 +1,6 @@
-.vscode
-.gitignore
-.npmignore
-.prettierrc
-package-lock.json
-examples
+*
+!package.json
+!README.md
+!/src/*.js
+*.test.js
+!/*.js
