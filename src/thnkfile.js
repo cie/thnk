@@ -3,12 +3,15 @@ import { jsonSchema } from 'ai'
 import yaml, { JSON_SCHEMA, Type } from 'js-yaml'
 import { z } from 'zod'
 import { openai } from '@ai-sdk/openai'
+import Handlebars from 'handlebars'
+import { Template } from './model/Template.js'
 
 const SettingsSchema = z.object({
-  prompt: z.string().optional(),
+  prompt: z.union([z.string(), z.instanceof(Template)]).optional(),
   schema: z.object({}).passthrough().optional(),
   model: z.string().optional().default('gpt-4o-mini'),
   temperature: z.number().min(0).max(2).optional().default(0.0),
+  data: z.object({}).passthrough().optional(),
 })
 
 const TargetSchema = z
@@ -38,6 +41,26 @@ const YAML_SCHEMA = JSON_SCHEMA.extend({
         return content
       },
     }),
+    new Type('!handlebars', {
+      kind: 'scalar',
+      construct(template) {
+        const fn = Handlebars.compile(template, {
+          noEscape: true,
+        })
+        return new Template((context) => {
+          let origToString
+          try {
+            origToString = Object.prototype.toString
+            Object.prototype.toString = function () {
+              return JSON.stringify(this, undefined, 2)
+            }
+            return fn(context, {})
+          } finally {
+            Object.prototype.toString = origToString
+          }
+        })
+      },
+    }),
   ],
 })
 
@@ -52,12 +75,16 @@ export class Thnkfile {
     try {
       const raw = yaml.load(src, { schema: YAML_SCHEMA })
       const config = ThnkfileSchema.parse(raw)
-      const globalSettings = SettingsSchema.parse(config)
+      const global = SettingsSchema.parse(config)
 
-      for (const [targetName, targetConfig] of Object.entries(config.targets)) {
+      for (const [targetName, target] of Object.entries(config.targets)) {
         try {
           this.rules.push(
-            new Rule(targetName, { ...globalSettings, ...targetConfig })
+            new Rule(targetName, {
+              ...global,
+              ...target,
+              data: { ...global.data, ...target.data },
+            })
           )
         } catch (e) {
           e.message = `Error in target ${targetName}: ${e.message}`
@@ -113,7 +140,6 @@ export class Thnkfile {
  * @implements {z.infer<typeof SettingsSchema>}
  */
 export class Rule {
-  opts
   /**
    * @param {string} target
    * @param {z.infer<typeof TargetSchema>} opts
@@ -144,10 +170,17 @@ export class Rule {
 
   generation(prompts) {
     // Use target-specific model and temperature if defined, otherwise use provided values
-    const { model, temperature, prompt, target, schema } = this
+    const { model, temperature, target, schema, data } = this
     const normalDepContents = Object.fromEntries(
       this.needs.map((fn) => [fn, readFileSync(fn)])
     )
+
+    // Process prompt if it's a Handlebars template
+    let { prompt } = this
+    if (prompt instanceof Template) {
+      prompt = prompt.apply(data)
+    }
+
     const config = {
       model: openai(model),
       system: prompts.system(target, normalDepContents),

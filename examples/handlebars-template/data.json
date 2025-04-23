@@ -1,0 +1,16 @@
+{
+  "project": "Thnk",
+  "version": "2.0.1",
+  "description": "A tool for AI-powered file generation with dependency tracking",
+  "features": [
+    "YAML configuration",
+    "Dependency tracking",
+    "Handlebars templating",
+    "Schema-driven generation",
+    "Evaluation and prompt iteration",
+    "A/B testing"
+  ],
+  "author": "Bernát Kalló",
+  "author_github": "cie",
+  "license": "MIT"
+}

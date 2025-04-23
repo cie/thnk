@@ -1,2 +1,6 @@
-- Implement logging instead of console.debug for better tracking of the application's behavior.
-- Create unit tests for critical functions to ensure reliability and facilitate future changes.
+## Features
+
+- caching LLM responses
+- handlebars templating
+- iteration
+- non-ai rules

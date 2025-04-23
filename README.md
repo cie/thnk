@@ -72,6 +72,22 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
         - user.json
       prompt: !file greeting.prompt.md
   ```
+  
+- **Templates**:
+  You can also use Handlebars templates for dynamic prompts with the `!handlebars` YAML tag. In these, you can access variables from the `data` key, both global and per target.
+  
+  ```yaml
+  data:
+    style: formal
+  targets:
+    hello.txt:
+      needs:
+        - users.json
+      data:
+        name: "John Doe"
+      prompt: !handlebars |
+        Greet the user named {{name}} in {{style}} style
+  ```
 
 - **Generation settings**: You can specify global settings that apply to all targets at the top level, or override them per target:
 
