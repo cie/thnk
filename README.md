@@ -40,6 +40,18 @@ thnk
 
 Thnk will read the `Thnkfile.yml`, check for changes in dependencies, and regenerate the target files if necessary.
 
+### Command-line Options
+
+Thnk supports the following command-line options:
+
+- `-B, --always-thnk`: Always regenerate files, even if dependencies haven't changed.
+- `-i, --interactive`: Run in interactive mode (see Interactive Mode section below).
+
+```bash
+# Always regenerate files
+thnk -B
+```
+
 ## Thnkfile.yml Syntax
 
 A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. Here's a brief overview of its syntax:
@@ -72,10 +84,10 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
         - user.json
       prompt: !file greeting.prompt.md
   ```
-  
+
 - **Templates**:
   You can also use Handlebars templates for dynamic prompts with the `!handlebars` YAML tag. In these, you can access variables from the `data` key, both global and per target.
-  
+
   ```yaml
   data:
     style: formal
@@ -84,7 +96,7 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
       needs:
         - users.json
       data:
-        name: "John Doe"
+        name: 'John Doe'
       prompt: !handlebars |
         Greet the user named {{name}} in {{style}} style
   ```
@@ -128,3 +140,18 @@ Here are the configuration options that can be used globally or per target:
 | `schema`      | The JSON schema to use        | no schema     |
 | `model`       | The LLM model to use          | `gpt-4o-mini` |
 | `temperature` | Controls randomness (0.0-2.0) | `0.0`         |
+
+## Interactive Mode
+
+Interactive mode allows you to repeatedly regenerate files without having to restart the command. This is particularly useful during development when iterating on prompts or templates.
+
+```bash
+# Run in interactive mode
+thnk -i
+```
+
+In interactive mode:
+
+- Thnk will run once initially
+- Press Enter to re-run the thnking
+- Press Ctrl+C to exit
