@@ -1,6 +1,8 @@
-# Thnk
+# Thnk – lightweight prompt manager
 
-Thnk is a command-line tool that automates the process of generating files based on AI models, similar to how Make automates the building of software. It uses a configuration file, akin to a Makefile, to manage dependencies and determine the operations required to generate target files from source files.
+Thnk is a command-line tool and JS library that automates the process of generating files/content with LLMs, similar to how Make automates the building of software. It uses a configuration file, akin to a Makefile, to manage dependencies and determine the operations required to generate target files from source files.
+
+Thnk can be used both as a command-line tool and programmatically via its JavaScript API. This enables a seamless workflow where you can iterate on your prompts and configurations independently, then use them directly in your application with all your settings preserved.
 
 **Breaking change in v2**: Thnk no longer uses a Makefile-like syntax, but instead YAML, which makes the file format much more flexible.
 
@@ -155,3 +157,92 @@ In interactive mode:
 - Thnk will run once initially
 - Press Enter to re-run the thnking
 - Press Ctrl+C to exit
+
+## Programmatic API
+
+Thnk can be used programmatically in your JavaScript/Node.js applications. This allows you to use prompts and configurations defined in Thnkfile.yml from within your code. In this case, we are no longer talking about _files_ per se, but in-memory entities whose generation logic is described in your Thnkfile.yml.
+
+The main idea is that you can freely iterate on your prompts and configurations without your host application running. Then you can seamlessly use your prompts in your application with all the settings and pre-processigns you defined in your Thnkfile.yml.
+
+**_Work in progress!_** Currently pipelines (consecutive generations that depend on each other) are not supported in the programmatic API.
+
+### Installation
+
+For programmatic usage, install Thnk as a dependency in your project:
+
+```bash
+npm install thnk
+```
+
+### Basic Usage
+
+```yaml
+# Thnkfile.yml
+targets:
+  greeting:
+    temperature: 0.7
+    prompt: !handlebars |
+      Write a friendly greeting to the person, according to the time of day.
+      The time is {{time}}.
+      The person's name is {{name}}.
+  dataSheet.json:
+    prompt: !handlebars |
+      Make a data sheet in JSON for the following product:
+      {{product}}
+    schema: !file dataSheet.schema.json
+```
+
+```javascript
+import { Thnk } from 'thnk'
+
+// Initialize Thnk with the path to your Thnkfile.yml (defaults to './Thnkfile.yml')
+const THNK = new Thnk('./Thnkfile.yml')
+
+// Generate text content
+const greeting = await THNK.text('greeting', {
+  data: {
+    name: 'Jacob',
+    time: '9:30PM',
+  },
+})
+console.log(greeting)
+
+// Generate JSON content
+const dataSheet = await THNK.object('dataSheet.json', {
+  data: {
+    product: {
+      product_name: 'Wakewake X123xi laptop 275G 512SSD i7',
+      stock: 7,
+    },
+  },
+})
+console.log(dataSheet)
+```
+
+### API Reference
+
+#### `new Thnk(thnkfileName)`
+
+Creates a new Thnk instance.
+
+- `thnkfileName` (string): Path to your Thnkfile.yml (defaults to 'Thnkfile.yml')
+
+#### `async text(target, options)`
+
+Generates text content for the specified target.
+
+- `target` (string): The target name as defined in your Thnkfile.yml
+- `options` (object): Optional configuration
+  - `data`: Object containing data to be used in templates
+
+Returns a Promise that resolves to the generated text content.
+
+#### `async object(target, options)`
+
+Generates JSON content for the specified target and parses it into a JavaScript object.
+
+- `target` (string): The target name as defined in your Thnkfile.yml (must be a JSON target, so it must end with `.json` and the rule must have a schema)
+- `options` (object): Optional configuration
+  - `data`: Object containing data to be used in templates
+
+Returns a Promise that resolves to the parsed JavaScript object.

@@ -1,5 +1,11 @@
 import { existsSync, readFileSync, statSync } from 'fs'
-import { jsonSchema } from 'ai'
+import {
+  jsonSchema,
+  streamText,
+  streamObject,
+  generateText,
+  generateObject,
+} from 'ai'
 import yaml, { JSON_SCHEMA, Type } from 'js-yaml'
 import * as prompts from './prompts.js'
 import { z } from 'zod'
@@ -7,7 +13,7 @@ import { openai } from '@ai-sdk/openai'
 import Handlebars from 'handlebars'
 import { Template } from './model/Template.js'
 
-const SettingsSchema = z.object({
+const OptionsSchema = z.object({
   prompt: z.union([z.string(), z.instanceof(Template)]).optional(),
   schema: z.object({}).passthrough().optional(),
   model: z.string().optional().default('gpt-4o-mini'),
@@ -19,13 +25,13 @@ const TargetSchema = z
   .object({
     needs: z.array(z.string()).optional().default([]),
   })
-  .merge(SettingsSchema)
+  .merge(OptionsSchema)
 
 const ThnkfileSchema = z
   .object({
     targets: z.record(z.string(), TargetSchema),
   })
-  .merge(SettingsSchema)
+  .merge(OptionsSchema)
 
 const YAML_SCHEMA = JSON_SCHEMA.extend({
   explicit: [
@@ -76,15 +82,16 @@ export class Thnkfile {
     try {
       const raw = yaml.load(src, { schema: YAML_SCHEMA })
       const config = ThnkfileSchema.parse(raw)
-      const global = SettingsSchema.parse(config)
+      const global = OptionsSchema.parse(config)
 
       for (const [targetName, target] of Object.entries(config.targets)) {
+        const { needs, ...options } = target
         try {
           this.rules.push(
-            new Rule(targetName, {
+            new Rule(targetName, needs, {
               ...global,
-              ...target,
-              data: { ...global.data, ...target.data },
+              ...options,
+              data: { ...global.data, ...options.data },
             })
           )
         } catch (e) {
@@ -143,17 +150,18 @@ export class Thnkfile {
 export class Rule {
   /**
    * @param {string} target
-   * @param {z.infer<typeof TargetSchema>} opts
+   * @param {z.infer<typeof OptionsSchema>} options
    */
-  constructor(target, opts) {
+  constructor(target, needs, options) {
     this.target = target
-    Object.assign(this, opts)
+    this.needs = needs
+    this.options = options
     // Will be updated when promptFile is set
-    this.isNoOp = !this.prompt
+    this.isNoOp = !options.prompt
   }
 
   get isJSON() {
-    return this.target.endsWith('.json') && !!this.schema
+    return this.target.endsWith('.json') && !!this.options.schema
   }
 
   canMake(target) {
@@ -169,37 +177,83 @@ export class Rule {
     })
   }
 
-  generation() {
-    // Use target-specific model and temperature if defined, otherwise use provided values
-    const { model, temperature, target, schema, data } = this
-    const normalDepContents = Object.fromEntries(
-      this.needs.map((fn) => [fn, readFileSync(fn)])
-    )
+  generation(runtimeOpts = {}) {
+    const { target } = this
+    const options = {
+      ...this.options,
+      ...runtimeOpts,
+      data: { ...this.options.data, ...runtimeOpts.data },
+    }
+    const { model, temperature, schema, data } = options
 
     // Process prompt if it's a Handlebars template
-    let { prompt, system } = this
+    let { prompt, system } = options
     if (prompt instanceof Template) {
       prompt = prompt.apply(data)
+    }
+    if (system instanceof Template) {
+      system = system.apply(data)
     }
 
     const config = {
       model: openai(model),
-      system: system ?? prompts.system(target, normalDepContents),
       temperature,
+      system:
+        system ??
+        prompts.system(
+          target,
+          Object.fromEntries(this.needs.map((fn) => [fn, readFileSync(fn)]))
+        ),
       prompt: prompt ?? '',
     }
 
     if (this.isJSON) {
-      return {
-        type: 'json',
-        config: {
-          ...config,
-          output: 'object',
-          schema: jsonSchema(schema),
-        },
-      }
+      return new ObjectGeneration(target, {
+        ...config,
+        output: 'object',
+        schema: jsonSchema(schema),
+      })
     } else {
-      return { type: 'text', config }
+      return new TextGeneration(target, config)
     }
+  }
+}
+
+export class TextGeneration {
+  type = 'text'
+
+  constructor(target, config) {
+    this.target = target
+    this.config = config
+  }
+
+  async text() {
+    return (await generateText(this.config)).text
+  }
+
+  stream() {
+    return streamText(this.config)
+  }
+}
+
+export class ObjectGeneration {
+  type = 'json'
+
+  constructor(target, config) {
+    this.target = target
+    this.config = config
+  }
+
+  async object() {
+    return (await generateObject(this.config)).object
+  }
+
+  async text() {
+    const object = await this.object()
+    return JSON.stringify(object, undefined, 2)
+  }
+
+  stream() {
+    return streamObject(this.config)
   }
 }

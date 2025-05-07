@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
-import { streamObject, streamText, generateText, generateObject } from 'ai'
 import { dirname } from 'path'
 import { Thnkfile } from './src/thnkfile.js'
 import { parseArgs } from 'util'
@@ -55,7 +54,7 @@ async function runThnk(targetArgs, runOptions) {
   let fileCount = 0
   for (const rule of plan) {
     const { target } = rule
-    const generation = rule.generation(prompts)
+    const generation = rule.generation({})
     ++fileCount
     let { config } = generation
     if (existsSync(target)) {
@@ -77,7 +76,7 @@ async function runThnk(targetArgs, runOptions) {
     process.stderr.write(lineHead)
     switch (generation.type) {
       case 'text': {
-        const { text, fullStream } = streamText({ ...config })
+        const { text, fullStream } = generation.stream()
         await displayProgress(fullStream, lineHead)
         result = await text
         break
@@ -87,7 +86,7 @@ async function runThnk(targetArgs, runOptions) {
           // prediction is not supported with tools
           delete config.providerOptions.openai.prediction
         }
-        const { object, fullStream } = streamObject({ ...config })
+        const { object, fullStream } = generation.stream()
         await displayProgress(fullStream, lineHead)
         result = JSON.stringify(await object, undefined, 2)
         break
