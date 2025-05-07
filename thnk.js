@@ -40,7 +40,7 @@ const THNKFILE_NAME = 'Thnkfile.yml'
  * Main function to run the thnk process
  * @param {string[]} targetArgs - Target arguments
  * @param {Object} runOptions - Run options
- * @returns {number} - Number of files processed
+ * @returns {Promise<number>} - Number of files processed
  */
 async function runThnk(targetArgs, runOptions) {
   let src
