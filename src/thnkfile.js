@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'fs'
 import { jsonSchema } from 'ai'
 import yaml, { JSON_SCHEMA, Type } from 'js-yaml'
+import * as prompts from './prompts.js'
 import { z } from 'zod'
 import { openai } from '@ai-sdk/openai'
 import Handlebars from 'handlebars'
@@ -168,7 +169,7 @@ export class Rule {
     })
   }
 
-  generation(prompts) {
+  generation() {
     // Use target-specific model and temperature if defined, otherwise use provided values
     const { model, temperature, target, schema, data } = this
     const normalDepContents = Object.fromEntries(
@@ -176,16 +177,16 @@ export class Rule {
     )
 
     // Process prompt if it's a Handlebars template
-    let { prompt } = this
+    let { prompt, system } = this
     if (prompt instanceof Template) {
       prompt = prompt.apply(data)
     }
 
     const config = {
       model: openai(model),
-      system: prompts.system(target, normalDepContents),
+      system: system ?? prompts.system(target, normalDepContents),
       temperature,
-      prompt,
+      prompt: prompt ?? '',
     }
 
     if (this.isJSON) {

@@ -4,7 +4,6 @@ import { streamObject, streamText, generateText, generateObject } from 'ai'
 import { dirname } from 'path'
 import { Thnkfile } from './src/thnkfile.js'
 import { parseArgs } from 'util'
-import * as prompts from './src/prompts.js'
 import { displayProgress } from './src/displayProgress.js'
 
 const { positionals: targets, values: options } = parseArgs({
