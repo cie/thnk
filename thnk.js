@@ -22,16 +22,6 @@ const { positionals: targets, values: options } = parseArgs({
   allowPositionals: true,
 })
 
-const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
-let model
-if (process.env.OPENAI_API_KEY) {
-  model = (await import('@ai-sdk/openai')).openai(
-    process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
-  )
-} else {
-  throw new Error('please set OPENAI_API_KEY')
-}
-
 const THNKFILE_NAME = 'Thnkfile.yml'
 
 //console.debug = () => { }
