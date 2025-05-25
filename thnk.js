@@ -5,24 +5,44 @@ import { Thnkfile } from './src/thnkfile.js'
 import { parseArgs } from 'util'
 import { displayProgress } from './src/displayProgress.js'
 
-const { positionals: targets, values: options } = parseArgs({
+const ARGS = {
   options: {
-    'always-thnk': {
+    help: {
       type: 'boolean',
-      short: 'B',
+      short: 'h',
+      description: 'Display this help',
     },
     interactive: {
       type: 'boolean',
       short: 'i',
+      description: 'Run in interactive mode',
+    },
+    'always-thnk': {
+      type: 'boolean',
+      short: 'B',
+      description: 'Regenerate files even if no dependencies are newer',
     },
   },
   strict: true,
   allowPositionals: true,
-})
+}
+const { positionals: targets, values: options } = parseArgs(ARGS)
+
+if (options.help) {
+  // nice help
+  console.log(`Usage: thnk [options] [target [target...]]
+Options:
+${Object.entries(ARGS.options)
+  .map(
+    ([name, { description }]) =>
+      `  -${ARGS.options[name].short}, --${name}`.padEnd(25) + description
+  )
+  .join('\n')}`)
+
+  process.exit(0)
+}
 
 const THNKFILE_NAME = 'Thnkfile.yml'
-
-//console.debug = () => { }
 
 /**
  * Main function to run the thnk process
