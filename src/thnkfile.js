@@ -10,7 +10,7 @@ import yaml, { JSON_SCHEMA, Type } from 'js-yaml'
 import * as prompts from './prompts.js'
 import { z } from 'zod'
 import { openai } from '@ai-sdk/openai'
-import Handlebars from 'handlebars'
+import { Liquid } from 'liquidjs'
 import { Template } from './model/Template.js'
 
 const OptionsSchema = z.object({
@@ -33,6 +33,13 @@ const ThnkfileSchema = z
   })
   .merge(OptionsSchema)
 
+const TEMPLATE_ENGINE = new Liquid({
+  strictFilters: true,
+  strictVariables: true,
+  cache: true,
+  outputEscape: false,
+})
+
 const YAML_SCHEMA = JSON_SCHEMA.extend({
   explicit: [
     new Type('!file', {
@@ -48,24 +55,20 @@ const YAML_SCHEMA = JSON_SCHEMA.extend({
         return content
       },
     }),
-    new Type('!handlebars', {
+    new Type('!liquid', {
       kind: 'scalar',
       construct(template) {
-        const fn = Handlebars.compile(template, {
-          noEscape: true,
+        return new Template((data) => {
+          return TEMPLATE_ENGINE.parseAndRenderSync(template, data)
         })
-        return new Template((context) => {
-          let origToString
-          try {
-            origToString = Object.prototype.toString
-            Object.prototype.toString = function () {
-              return JSON.stringify(this, undefined, 2)
-            }
-            return fn(context, {})
-          } finally {
-            Object.prototype.toString = origToString
-          }
-        })
+      },
+    }),
+    new Type('!handlebars', {
+      kind: 'scalar',
+      construct(_template) {
+        throw new Error(
+          '!handlebars tag is no longer supported. Use !liquid instead.'
+        )
       },
     }),
   ],
@@ -186,7 +189,7 @@ export class Rule {
     }
     const { model, temperature, schema, data } = options
 
-    // Process prompt if it's a Handlebars template
+    // Process prompt if it's a Liquid template
     let { prompt, system } = options
     if (prompt instanceof Template) {
       prompt = prompt.apply(data)

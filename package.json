@@ -1,6 +1,6 @@
 {
   "name": "thnk",
-  "version": "2.3.0",
+  "version": "3.0.0",
   "description": "Makefiles for AI text generation",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     "@ai-sdk/openai": "^1.1.12",
     "@kba/makefile-parser": "^0.0.6",
     "ai": "^4.1.41",
-    "handlebars": "^4.7.8",
+    "liquidjs": "^10.21.0",
     "js-yaml": "^4.1.0",
     "zod": "^3.24.3"
   },

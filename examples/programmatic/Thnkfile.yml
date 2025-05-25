@@ -1,12 +1,12 @@
 targets:
   greeting:
     temperature: 0.7
-    prompt: !handlebars |
+    prompt: !liquid |
       Write a friendly greeting to the person, according to the time of day.
-      The time is {{time}}.
-      The person's name is {{name}}.
+      The time is {{ time }}.
+      The person's name is {{ name }}.
   dataSheet.json:
-    prompt: !handlebars |
+    prompt: !liquid |
       Make a data sheet in JSON for the following product:
-      {{product}}
+      {{ product | json }}
     schema: !file dataSheet.schema.json

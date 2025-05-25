@@ -1,6 +1,7 @@
 {
   "project": "Thnk",
-  "version": "2.0.1",
+
+  "version": "3.0.0",
   "description": "A tool for AI-powered file generation with dependency tracking",
   "features": [
     "YAML configuration",

@@ -4,6 +4,8 @@ Thnk is a command-line tool and JS library that automates the process of generat
 
 Thnk can be used both as a command-line tool and programmatically via its JavaScript API. This enables a seamless workflow where you can iterate on your prompts and configurations independently, then use them directly in your application with all your settings preserved.
 
+**Breaking change in v3**: The templating engine has been changed from Handlebars to LiquidJS, because it has more powerful features for transformations of data. Please migrate your templates to use the `!liquid` tag. Simple variable substitutions have the similar `{{ variable }}` syntax. For conditionals and iterations, see [Liquid template documentation](https://liquidjs.com/tutorials/intro-to-liquid.html).
+
 **Breaking change in v2**: Thnk no longer uses a Makefile-like syntax, but instead YAML, which makes the file format much more flexible.
 
 ### Creating AI generation pipelines
@@ -88,7 +90,7 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
   ```
 
 - **Templates**:
-  You can also use Handlebars templates for dynamic prompts with the `!handlebars` YAML tag. In these, you can access variables from the `data` key, both global and per target.
+  You can use Liquid templates for dynamic prompts with the `!liquid` YAML tag. In these, you can access variables from the `data` key, both global and per target. For backward compatibility, the `!handlebars` tag is still supported but uses LiquidJS internally.
 
   ```yaml
   data:
@@ -98,9 +100,10 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
       needs:
         - users.json
       data:
-        name: 'John Doe'
-      prompt: !handlebars |
-        Greet the user named {{name}} in {{style}} style
+        user:
+          name: 'John Doe'
+      prompt: !liquid |
+        Greet the user {{ user.name }} in {{ style }} style
   ```
 
 - **Generation settings**: You can specify global settings that apply to all targets at the top level, or override them per target:
@@ -195,11 +198,12 @@ targets:
 ```javascript
 import { Thnk } from 'thnk'
 
-// Initialize Thnk with the path to your Thnkfile.yml (defaults to './Thnkfile.yml')
-const THNK = new Thnk('./Thnkfile.yml')
+// Initialize Thnk with the path to your Thnkfile.yml 
+// (defaults to './Thnkfile.yml', read synchronously)
+const thnk = new Thnk('./Thnkfile.yml')
 
 // Generate text content
-const greeting = await THNK.text('greeting', {
+const greeting = await thnk.text('greeting', {
   data: {
     name: 'Jacob',
     time: '9:30PM',
@@ -208,7 +212,7 @@ const greeting = await THNK.text('greeting', {
 console.log(greeting)
 
 // Generate JSON content
-const dataSheet = await THNK.object('dataSheet.json', {
+const dataSheet = await thnk.object('dataSheet.json', {
   data: {
     product: {
       product_name: 'Wakewake X123xi laptop 275G 512SSD i7',
@@ -232,8 +236,8 @@ Creates a new Thnk instance.
 Generates text content for the specified target.
 
 - `target` (string): The target name as defined in your Thnkfile.yml
-- `options` (object): Optional configuration
-  - `data`: Object containing data to be used in templates
+- `options` (object): Optional configuration overrides, see configuration options in [Thnkfile.yml Syntax](#thnkfileyml-syntax).
+    - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
 
 Returns a Promise that resolves to the generated text content.
 
@@ -242,7 +246,7 @@ Returns a Promise that resolves to the generated text content.
 Generates JSON content for the specified target and parses it into a JavaScript object.
 
 - `target` (string): The target name as defined in your Thnkfile.yml (must be a JSON target, so it must end with `.json` and the rule must have a schema)
-- `options` (object): Optional configuration
-  - `data`: Object containing data to be used in templates
+- `options` (object): Optional configuration overrides, see configuration options in [Thnkfile.yml Syntax](#thnkfileyml-syntax).
+    - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
 
 Returns a Promise that resolves to the parsed JavaScript object.

@@ -1,10 +1,10 @@
 targets:
   summary.md:
-    data: 
+    data:
       info: !file data.json
-    prompt: !handlebars |
+    prompt: !liquid |
       Create summary of the software described in the following data:
-      
-      {{info}}
-      
+
+      {{ info | json }}
+
       Include all key information and format it nicely with headers and bullet points.

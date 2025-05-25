@@ -1,8 +1,8 @@
-# Thnk - Project Summary
+# Thnk - Software Summary
 
 ## Project Information
 - **Name:** Thnk
-- **Version:** 2.0.1
+- **Version:** 3.0.0
 - **Author:** Bernát Kalló
 - **Author GitHub:** [cie](https://github.com/cie)
 - **License:** MIT
