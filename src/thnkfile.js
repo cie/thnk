@@ -13,25 +13,30 @@ import { openai } from '@ai-sdk/openai'
 import { Liquid } from 'liquidjs'
 import { Template } from './model/Template.js'
 
-const OptionsSchema = z.object({
+const GenerationSchema = z.object({
   prompt: z.union([z.string(), z.instanceof(Template)]).optional(),
   schema: z.object({}).passthrough().optional(),
   model: z.string().optional().default('gpt-4o-mini'),
   temperature: z.number().min(0).max(2).optional().default(0.0),
-  data: z.object({}).passthrough().optional(),
+})
+
+const ComputationSchema = z.object({
+  content: z.union([z.string(), z.instanceof(Template)]),
 })
 
 const TargetSchema = z
   .object({
     needs: z.array(z.string()).optional().default([]),
+    data: z.object({}).passthrough().optional(),
   })
-  .merge(OptionsSchema)
+  .and(ComputationSchema.or(GenerationSchema))
 
 const ThnkfileSchema = z
   .object({
     targets: z.record(z.string(), TargetSchema),
+    data: z.object({}).passthrough().optional(),
   })
-  .merge(OptionsSchema)
+  .merge(GenerationSchema)
 
 const TEMPLATE_ENGINE = new Liquid({
   strictFilters: true,
@@ -85,7 +90,7 @@ export class Thnkfile {
     try {
       const raw = yaml.load(src, { schema: YAML_SCHEMA })
       const config = ThnkfileSchema.parse(raw)
-      const global = OptionsSchema.parse(config)
+      const global = GenerationSchema.parse(config)
 
       for (const [targetName, target] of Object.entries(config.targets)) {
         const { needs, ...options } = target
@@ -153,14 +158,16 @@ export class Thnkfile {
 export class Rule {
   /**
    * @param {string} target
-   * @param {z.infer<typeof OptionsSchema>} options
+   * @param {z.infer<typeof GenerationSchema>} options
    */
   constructor(target, needs, options) {
     this.target = target
     this.needs = needs
     this.options = options
-    // Will be updated when promptFile is set
-    this.isNoOp = !options.prompt
+  }
+
+  get isNoOp() {
+    return !this.options.prompt && !this.options.content
   }
 
   get isJSON() {
@@ -187,8 +194,16 @@ export class Rule {
       ...runtimeOpts,
       data: { ...this.options.data, ...runtimeOpts.data },
     }
-    const { model, temperature, schema, data } = options
 
+    if (this.options.content) {
+      let { content, data } = this.options
+      if (content instanceof Template) {
+        content = content.apply(data)
+      }
+      return content
+    }
+
+    const { model, temperature, schema, data } = options
     // Process prompt if it's a Liquid template
     let { prompt, system } = options
     if (prompt instanceof Template) {
@@ -197,7 +212,6 @@ export class Rule {
     if (system instanceof Template) {
       system = system.apply(data)
     }
-
     const config = {
       model: openai(model),
       temperature,

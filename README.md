@@ -133,18 +133,34 @@ A `Thnkfile.yml` uses YAML format to define targets, dependencies, and recipes. 
       schema: !file my.schema.json
   ```
 
+- **Computation without AI**
+
+  You can also use Thnk to perform non-generative computations locally, by using the `content` key to specify the content directly, usually with a template.
+
 See the `examples` folder for sample `Thnkfile.yml` configurations.
+
+```yaml
+targets:
+  email.txt:
+    data:
+      username: 'John'
+    content: !liquid |
+      Hello {{ username }},
+
+      Welcome to our service!
+```
 
 ## Generation settings
 
 Here are the configuration options that can be used globally or per target:
 
-| Option        | Description                   | Default       |
-| ------------- | ----------------------------- | ------------- |
-| `prompt`      | The prompt to use             | empty string  |
-| `schema`      | The JSON schema to use        | no schema     |
-| `model`       | The LLM model to use          | `gpt-4o-mini` |
-| `temperature` | Controls randomness (0.0-2.0) | `0.0`         |
+| Option        | Description                                           | Default       |
+| ------------- | ----------------------------------------------------- | ------------- |
+| `prompt`      | The prompt to use                                     |               |
+| `schema`      | The JSON schema to use                                | no schema     |
+| `model`       | The LLM model to use                                  | `gpt-4o-mini` |
+| `temperature` | Controls randomness (0.0-2.0)                         | `0.0`         |
+| `data`        | Data to pass to the template. Will be merged per key. |               |
 
 ## Interactive Mode
 
@@ -198,7 +214,7 @@ targets:
 ```javascript
 import { Thnk } from 'thnk'
 
-// Initialize Thnk with the path to your Thnkfile.yml 
+// Initialize Thnk with the path to your Thnkfile.yml
 // (defaults to './Thnkfile.yml', read synchronously)
 const thnk = new Thnk('./Thnkfile.yml')
 
@@ -237,7 +253,7 @@ Generates text content for the specified target.
 
 - `target` (string): The target name as defined in your Thnkfile.yml
 - `options` (object): Optional configuration overrides, see configuration options in [Thnkfile.yml Syntax](#thnkfileyml-syntax).
-    - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
+  - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
 
 Returns a Promise that resolves to the generated text content.
 
@@ -247,6 +263,6 @@ Generates JSON content for the specified target and parses it into a JavaScript 
 
 - `target` (string): The target name as defined in your Thnkfile.yml (must be a JSON target, so it must end with `.json` and the rule must have a schema)
 - `options` (object): Optional configuration overrides, see configuration options in [Thnkfile.yml Syntax](#thnkfileyml-syntax).
-    - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
+  - `data` (object): Optional data, shallow merged with the data defined in the Thnkfile.yml
 
 Returns a Promise that resolves to the parsed JavaScript object.

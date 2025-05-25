@@ -29,7 +29,6 @@ const ARGS = {
 const { positionals: targets, values: options } = parseArgs(ARGS)
 
 if (options.help) {
-  // nice help
   console.log(`Usage: thnk [options] [target [target...]]
 Options:
 ${Object.entries(ARGS.options)
@@ -75,44 +74,48 @@ async function runThnk(targetArgs, runOptions) {
   for (const rule of plan) {
     const { target } = rule
     const generation = rule.generation({})
+    let result
     ++fileCount
-    let { config } = generation
-    if (existsSync(target)) {
-      const existingContent = readFileSync(target, 'utf8')
-      config = {
-        ...config,
-        providerOptions: {
-          openai: {
-            prediction: {
-              type: 'content',
-              content: existingContent,
+    if (typeof generation === 'string') {
+      result = generation
+    } else {
+      let { config } = generation
+      if (existsSync(target)) {
+        const existingContent = readFileSync(target, 'utf8')
+        config = {
+          ...config,
+          providerOptions: {
+            openai: {
+              prediction: {
+                type: 'content',
+                content: existingContent,
+              },
             },
           },
-        },
-      }
-    }
-    let result
-    let lineHead = `Thnking ${target}... `
-    process.stderr.write(lineHead)
-    switch (generation.type) {
-      case 'text': {
-        const { text, fullStream } = generation.stream()
-        await displayProgress(fullStream, lineHead)
-        result = await text
-        break
-      }
-      case 'json': {
-        if (config.providerOptions?.openai?.prediction) {
-          // prediction is not supported with tools
-          delete config.providerOptions.openai.prediction
         }
-        const { object, fullStream } = generation.stream()
-        await displayProgress(fullStream, lineHead)
-        result = JSON.stringify(await object, undefined, 2)
-        break
       }
+      let lineHead = `Thnking ${target}... `
+      process.stderr.write(lineHead)
+      switch (generation.type) {
+        case 'text': {
+          const { text, fullStream } = generation.stream()
+          await displayProgress(fullStream, lineHead)
+          result = await text
+          break
+        }
+        case 'json': {
+          if (config.providerOptions?.openai?.prediction) {
+            // prediction is not supported with tools
+            delete config.providerOptions.openai.prediction
+          }
+          const { object, fullStream } = generation.stream()
+          await displayProgress(fullStream, lineHead)
+          result = JSON.stringify(await object, undefined, 2)
+          break
+        }
+      }
+      process.stderr.write('\n')
     }
-    process.stderr.write('\n')
     try {
       mkdirSync(dirname(target), { recursive: true })
       writeFileSync(target, result)
